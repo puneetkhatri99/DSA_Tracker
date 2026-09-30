@@ -1,3 +1,6 @@
+@import 'highlight.js/styles/github.css' (prefers-color-scheme: light);
+@import 'highlight.js/styles/github-dark.css' (prefers-color-scheme: dark);
+
 /* Tokens. --faint is for icons and borders only (3:1); all text uses --text or --muted (AA). One accent (blue) for anything interactive or "progress"; green/amber/rose only mean Easy/Medium/Hard.
    Radius rule: cards 12px, controls 8px, chips/tags/badges pill. */
 :root {
@@ -26,7 +29,7 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 button, select, input, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
-.ph, .ph-fill { font-size: 1.1em; line-height: 1; }
+svg.ph { font-size: 1.1em; flex: none; vertical-align: -.15em; } /* Phosphor icons (IconContext adds the class) */
 .bad { color: var(--hard); }
 
 /* ---------- header ---------- */
@@ -45,6 +48,17 @@ header { position: sticky; top: 0; z-index: 10; display: flex; align-items: cent
 #due-badge:hover { text-decoration: none; background: color-mix(in srgb, var(--med) 18%, transparent); }
 #save-status { font-size: 12.5px; color: var(--muted); white-space: nowrap; }
 #save-status.bad { color: var(--hard); }
+.account { position: relative; margin-right: -6px; }
+.account > summary { list-style: none; }
+.account > summary::-webkit-details-marker { display: none; }
+.account[open] > summary { color: var(--text); background: var(--raised); }
+.menu { position: absolute; right: 0; top: calc(100% + 8px); z-index: 20; display: grid; width: 240px; padding: 6px; background: var(--panel);
+  border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 10px 30px color-mix(in srgb, #000 14%, transparent); }
+.menu p { display: grid; margin: 0 0 4px; padding: 8px 10px 10px; border-bottom: 1px solid var(--line); font-size: 14px; }
+.menu p span { overflow: hidden; text-overflow: ellipsis; font-size: 12.5px; color: var(--muted); }
+.menu a, .menu button { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 0; border-radius: 8px; background: none;
+  color: var(--text); font-size: 14px; text-align: left; }
+.menu a:hover, .menu button:hover { background: var(--raised); text-decoration: none; }
 #timer { display: inline-flex; align-items: center; gap: 8px; padding: 2px 3px 2px 10px; border: 1px solid var(--line); border-radius: 999px;
   font-size: 13px; white-space: nowrap; }
 #timer > .ph { color: var(--accent); }
@@ -206,17 +220,36 @@ button.primary kbd { border: 0; background: color-mix(in srgb, var(--on-accent) 
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
 .card > .q:first-child { border-top: 0; }
 .quiet { margin: 0; font-size: 14px; color: var(--muted); }
-.heat-wrap { width: fit-content; max-width: 100%; }
-.heat { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 12px); grid-auto-columns: 12px; gap: 3px; overflow-x: auto;
-  padding: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
-.legend .l0 { box-shadow: inset 0 0 0 1px var(--line); }
-.heat i, .legend i { display: block; width: 12px; height: 12px; border-radius: 3px; background: var(--raised); }
-.heat .l1, .legend .l1 { background: color-mix(in srgb, var(--accent) 30%, var(--raised)); }
-.heat .l2, .legend .l2 { background: color-mix(in srgb, var(--accent) 55%, var(--raised)); }
-.heat .l3, .legend .l3 { background: color-mix(in srgb, var(--accent) 80%, var(--raised)); }
-.heat .l4, .legend .l4 { background: var(--accent); }
-.heat-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px; margin: 8px 0 0; font-size: 12.5px; color: var(--muted); }
-.legend { display: inline-flex; align-items: center; gap: 3px; }
+.cal { position: relative; padding: 18px 20px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+.cal-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 24px; margin-bottom: 14px; font-size: 13.5px; color: var(--muted); }
+.cal-head p { margin: 0; }
+.cal-head p:first-child { margin-right: auto; font-size: 15px; color: var(--text); }
+.cal-head b { font: 600 15px var(--mono); color: var(--text); font-variant-numeric: tabular-nums; }
+.cal-scroll { overflow-x: auto; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+/* one column per week; the day-name column is fixed, the weeks share the rest */
+.cal-grid { display: grid; grid-template-columns: 30px 1fr; grid-template-rows: auto auto; column-gap: 6px; row-gap: 6px; min-width: 720px; }
+.cal-months, .cal-cells { grid-column: 2; display: grid; grid-template-columns: repeat(53, minmax(0, 1fr)); column-gap: 3px; }
+.cal-months { font-size: 11.5px; color: var(--muted); }
+.cal-months span { white-space: nowrap; }
+.cal-days { grid-column: 1; grid-row: 2; display: grid; grid-template-rows: repeat(7, 1fr); row-gap: 3px; font-size: 11px; color: var(--muted); }
+.cal-days span { display: flex; align-items: center; }
+.cal-cells { grid-row: 2; grid-template-rows: repeat(7, auto); grid-auto-flow: column; row-gap: 3px; }
+.cal-cells i { aspect-ratio: 1; border-radius: 3px; background: var(--raised); outline: 1px solid color-mix(in srgb, var(--text) 5%, transparent); outline-offset: -1px; }
+.cal-cells i:hover { outline: 1.5px solid var(--text); }
+.cal-foot { display: flex; justify-content: flex-end; margin-top: 10px; font-size: 12px; color: var(--muted); }
+.legend { display: inline-flex; align-items: center; gap: 4px; }
+.legend i { display: block; width: 11px; height: 11px; border-radius: 3px; background: var(--raised); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 5%, transparent); }
+.cal-cells .l1, .legend .l1 { background: color-mix(in srgb, var(--accent) 30%, var(--raised)); }
+.cal-cells .l2, .legend .l2 { background: color-mix(in srgb, var(--accent) 55%, var(--raised)); }
+.cal-cells .l3, .legend .l3 { background: color-mix(in srgb, var(--accent) 80%, var(--raised)); }
+.cal-cells .l4, .legend .l4 { background: var(--accent); }
+.cal-tip { position: absolute; z-index: 5; transform: translate(-50%, calc(-100% - 8px)); padding: 6px 10px; border-radius: 6px; pointer-events: none;
+  background: var(--text); color: var(--bg); font-size: 12px; font-weight: 500; white-space: nowrap; }
+.cal-tip::after { content: ""; position: absolute; left: 50%; top: 100%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: var(--text); }
+.cal-tip.start { transform: translate(-14px, calc(-100% - 8px)); }
+.cal-tip.end { transform: translate(calc(-100% + 14px), calc(-100% - 8px)); }
+.cal-tip.start::after { left: 14px; }
+.cal-tip.end::after { left: calc(100% - 14px); }
 
 /* ---------- quiz + mock interview ---------- */
 .lede { margin: 8px 0 0; max-width: 65ch; font-size: 14.5px; color: var(--muted); }
@@ -257,10 +290,42 @@ button.primary kbd { border: 0; background: color-mix(in srgb, var(--on-accent) 
 .md th { background: var(--raised); font-weight: 600; }
 .md blockquote { margin: 16px 0; padding: 10px 16px; border-left: 3px solid var(--accent); background: var(--raised); border-radius: 0 8px 8px 0; }
 
+/* ---------- note editor (admin) ---------- */
+.note-main { min-width: 0; }
+.note-tools { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+.new-note { margin: 14px 10px 0; }
+.editor { display: grid; gap: 10px; }
+.editor-bar { display: flex; flex-wrap: wrap; gap: 8px; }
+.editor-bar input, .auth input, .invite input { height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); font-size: 14px; }
+.editor-bar input { flex: 1 1 180px; min-width: 0; }
+.editor-panes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
+.md-src { width: 100%; min-height: 70dvh; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel);
+  font: 13px/1.6 var(--mono); resize: vertical; tab-size: 4; }
+.editor-panes .md { padding: 4px 24px 24px; max-height: 80dvh; overflow-y: auto; }
+.editor-bar input:focus-visible, .md-src:focus-visible, .auth input:focus-visible, .invite input:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+button.primary:disabled { opacity: .55; cursor: default; filter: none; }
+
+/* ---------- login / sign-up ---------- */
+main.auth { display: grid; place-items: center; min-height: 100dvh; padding: 24px 16px; }
+.auth-card { display: grid; gap: 14px; width: 100%; max-width: 380px; padding: 32px 28px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+.auth-card .brand { margin: 0 0 8px; }
+.auth-card h1 { margin: 0; font-size: 22px; font-weight: 650; letter-spacing: -.02em; }
+.auth-card .lede { margin: -6px 0 4px; font-size: 14px; }
+.field { display: grid; gap: 6px; font-size: 13px; font-weight: 500; color: var(--muted); }
+.field input { width: 100%; color: var(--text); }
+.form-error { margin: 0; padding: 8px 12px; border-radius: 8px; font-size: 14px; color: var(--hard); background: color-mix(in srgb, var(--hard) 9%, var(--panel)); }
+.auth-card button.primary { justify-content: center; height: 40px; margin-top: 4px; }
+
+/* ---------- invites (admin) ---------- */
+.invite { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 6px 8px 6px 16px; border-top: 1px solid var(--line); font-size: 14px; }
+.invite:first-child { border-top: 0; }
+.invite input { flex: 1; min-width: 0; font: 12.5px var(--mono); color: var(--muted); }
+.invite small { font: 12px var(--mono); color: var(--muted); white-space: nowrap; }
+
 /* ---------- small screens ---------- */
 @media (max-width: 760px) {
   header { gap: 12px; padding: 0 12px; }
-  .brand { font-size: 0; gap: 0; }
+  .brand { display: none; } /* "Today" goes to the same place, and the nav needs the room */
   #save-status:not(.bad) { display: none; }
   main { padding: 20px 14px 80px; }
   .head h1 { font-size: 22px; }
@@ -269,6 +334,7 @@ button.primary kbd { border: 0; background: color-mix(in srgb, var(--on-accent) 
   .signal { font-size: 18px; }
   .stats { gap: 10px 22px; }
   .stats dd { font-size: 16px; }
+  .cal { padding: 14px 14px 12px; }
   .search { flex-basis: 100%; }
   .filters select { flex: 1 1 auto; }
   .topic > summary { flex-wrap: wrap; gap: 8px 10px; padding: 10px 12px; }
@@ -286,6 +352,9 @@ button.primary kbd { border: 0; background: color-mix(in srgb, var(--on-accent) 
   #timer .t-title, .search kbd { display: none; }
   .notes { grid-template-columns: 1fr; gap: 16px; }
   .notes aside { position: static; max-height: none; }
+  .editor-panes { grid-template-columns: 1fr; }
+  .md-src { min-height: 40dvh; }
+  .account { margin-right: -4px; }
   .md { padding: 4px 18px 24px; }
 }
 
