@@ -1,6 +1,7 @@
 {
   "roadmaps": [
-    { "id": "dsa", "title": "DSA Roadmap", "file": "roadmaps/dsa.json" }
+    { "id": "learn", "title": "Learn", "file": "roadmaps/learn.json" },
+    { "id": "practice", "title": "Practice 50", "file": "roadmaps/practice.json", "mock": true }
   ],
   "notes": [
     { "section": "Java for DSA", "items": [
@@ -18,6 +19,9 @@
       { "id": "core-modern", "title": "Modern Java (8 → 21)", "file": "notes/java-core/04-java8-plus.md" },
       { "id": "core-threads", "title": "Multithreading Basics", "file": "notes/java-core/05-multithreading.md" }
     ]},
-    { "section": "DSA Patterns", "fromRoadmap": "dsa" }
+    { "section": "DSA Patterns", "fromRoadmap": "learn" },
+    { "section": "More Patterns", "items": [
+      { "id": "pat-two-pointers", "title": "Two Pointers", "file": "notes/patterns/two-pointers.md" }
+    ]}
   ]
 }

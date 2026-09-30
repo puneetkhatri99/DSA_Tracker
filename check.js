@@ -7,7 +7,7 @@ const exists = f => fs.existsSync(path.join(__dirname, f));
 const errors = [];
 const fail = msg => errors.push(msg);
 const DIFFS = ['E', 'M', 'H'];
-const SOURCES = ['A2Z', 'NC150', 'NC250', 'B75', 'LC150', 'LC75'];
+const TIERS = ['basic', 'core', 'pro'];
 
 const content = read('content.json');
 const seen = new Set();
@@ -31,11 +31,10 @@ for (const r of content.roadmaps) {
       if (!q.title || !/^https?:\/\//.test(q.url || '')) fail(`${where}: needs title and http(s) url`);
       if (!DIFFS.includes(q.diff)) fail(`${where}: diff must be E/M/H`);
       for (const [label, u] of Object.entries(q.alt || {})) if (!/^https?:\/\//.test(u)) fail(`${where}: alt link "${label}" must be an http(s) url`);
-      if (!Array.isArray(q.src) || !Array.isArray(q.needs)) fail(`${where}: src and needs must be arrays (use [] if none)`);
-      for (const s of q.src || []) {
-        if (!SOURCES.includes(s)) fail(`${where}: unknown source ${s}`);
-        counts[s] = (counts[s] || 0) + 1;
-      }
+      if (!Array.isArray(q.needs)) fail(`${where}: needs must be an array (use [] if none)`);
+      if (q.tier !== undefined && !TIERS.includes(q.tier)) fail(`${where}: tier must be basic/core/pro`);
+      if (q.patterns !== undefined && !(Array.isArray(q.patterns) && q.patterns.every(p => typeof p === 'string' && p))) fail(`${where}: patterns must be a list of names`);
+      for (const k of [q.diff, q.tier]) if (k) counts[k] = (counts[k] || 0) + 1;
       for (const n of q.needs || []) if (!before(n)) fail(`${where}: need "${n}" must be an earlier topic`);
     }
   }

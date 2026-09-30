@@ -37,7 +37,8 @@ http.createServer((req, res) => {
     return res.writeHead(405).end();
   }
 
-  const file = path.join(ROOT, url === '/' ? 'index.html' : url);
+  if (url.split('/').some(p => p.startsWith('.'))) return res.writeHead(403).end(); // no .git, .DS_Store, ..
+  const file = path.join(ROOT, path.extname(url) ? url : 'index.html'); // /today, /roadmap/learn… are app pages
   if (!file.startsWith(ROOT + path.sep)) return res.writeHead(403).end();
   fs.readFile(file, (err, data) => {
     if (err) return res.writeHead(404).end('not found');
