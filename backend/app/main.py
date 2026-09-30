@@ -1,9 +1,7 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
 
 from . import api, auth
 from .config import DIST
@@ -30,15 +28,7 @@ async def security_headers(request, call_next):
     return res
 
 
-# The built React app (npm run build). Every non-file path is an app page, so it gets index.html.
+# The built React app (npm run build). On Vercel it is served from the CDN. Pages the browser opens directly
+# (/today, /roadmap/learn …) get index.html; API routes always win over it.
 if DIST.exists():
-    app.mount('/assets', StaticFiles(directory=DIST / 'assets'), name='assets')
-
-    @app.get('/{path:path}', include_in_schema=False)
-    async def spa(path: str):
-        if path.startswith('api/'):
-            raise HTTPException(404)
-        f = (DIST / path).resolve()
-        if path and f.is_file() and f.is_relative_to(DIST):
-            return FileResponse(f)
-        return FileResponse(DIST / 'index.html')
+    app.frontend('/', directory=DIST)

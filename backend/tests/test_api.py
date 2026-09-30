@@ -11,7 +11,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app import cli
-from app.db import db, now
+from app.config import DIST
+from app.db import db, ensure_indexes, now
 from app.main import app
 
 ADMIN, ADMIN_PW = 'admin@example.com', 'admin-pass-1'
@@ -20,6 +21,7 @@ ADMIN, ADMIN_PW = 'admin@example.com', 'admin-pass-1'
 @pytest.fixture(scope='module')
 def c():
     with TestClient(app) as client:
+        client.portal.call(ensure_indexes)
         client.portal.call(cli.seed)
         client.portal.call(cli.create_user, ADMIN, 'Admin', ADMIN_PW, True)
         yield client
@@ -135,7 +137,13 @@ def test_progress_is_validated_and_private(c):
 
 
 def test_app_pages_serve_the_spa(c):
-    if not (app.routes and any(getattr(r, 'path', '') == '/{path:path}' for r in app.routes)):
+    if not DIST.exists():
         pytest.skip('frontend not built')
-    assert '<div id="root">' in c.get('/roadmap/learn').text
+    c.cookies.clear()
+    page = {'Accept': 'text/html'}   # what a browser sends when you open a page
+    assert '<div id="root">' in c.get('/roadmap/learn', headers=page).text
+    assert '<div id="root">' in c.get('/', headers=page).text
+    js = next((DIST / 'assets').glob('index-*.js')).name
+    assert c.get(f'/assets/{js}').headers['content-type'].startswith('text/javascript')
     assert c.get('/api/nope').status_code == 404
+    assert c.get('/api/content', headers=page).status_code == 401   # API routes win over the frontend

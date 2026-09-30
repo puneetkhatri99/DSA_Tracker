@@ -90,15 +90,27 @@ Reviews follow the steps 1, 3, 7, 15, 30 and 60 days (`REVIEW_DAYS` in `frontend
 - `/` focuses the search box, `n` jumps to Next up, `Esc` leaves a text box.
 - In the quiz, `Space` shows the answer.
 
-## Deploy
+## Deploy on Vercel
 
-The `Dockerfile` builds the frontend and runs everything in one container. On Render, Railway or Fly:
+The repo is set up as one Vercel project: `pyproject.toml` tells Vercel where the FastAPI app is (`backend.app.main:app`) and to build the React app during the deploy, and `vercel.json` keeps the frontend's `node_modules` out of the Python bundle. Vercel serves the built site from its CDN and sends `/api/...` to FastAPI, all on one domain, so the login cookie just works.
 
-1. Create a web service from this repo (it finds the Dockerfile).
-2. Set the environment variables `MONGODB_URI` and `DB_NAME`. Do **not** set `COOKIE_SECURE` (the default is secure cookies, which needs https; these hosts give you https).
-3. In Atlas Network Access, allow the host's outbound IPs, or `0.0.0.0/0` with a strong database password.
+1. **Atlas → Network Access → Add IP Address → Allow access from anywhere** (`0.0.0.0/0`). Vercel has no fixed IP addresses, so this is required; make sure your database user's password is strong.
+2. **vercel.com → Add New → Project →** import this GitHub repo. Leave the framework as detected (FastAPI) and the root directory as the repo root.
+3. **Environment Variables** (same screen, or Settings → Environment Variables later):
+   - `MONGODB_URI`: the value from your `.env`
+   - `DB_NAME`: `DSA_tracker`
 
-The database already holds your content and accounts, so nothing else is needed. If you deploy against a new database, run `seed` and `create-admin` once (from your machine with that `MONGODB_URI`, or in the host's shell from `/app/backend`).
+   Do **not** add `COOKIE_SECURE`; Vercel is https, so the secure default is right.
+4. **Deploy.** Vercel installs the Python packages, runs `npm ci && npm run build` in `frontend/`, and gives you a `https://<project>.vercel.app` address.
+5. **Settings → Functions → Function Region**: pick the region closest to your Atlas cluster (Atlas shows it on the cluster card), then redeploy. Each request makes a few database calls, so this is the biggest speed win.
+
+Vercel builds production from the repo's default branch (`main`); other branches get preview deployments behind Vercel login. The database already holds the content and your account, so you can log in right away. Against a new database, run `seed` and `create-admin` once from your machine with that `MONGODB_URI`.
+
+Invite links use whatever address you open the app on, so create them from the Vercel URL (or your custom domain), not from localhost.
+
+### Other hosts
+
+The `Dockerfile` builds the frontend and runs everything in one container, for Render, Railway or Fly: create a web service from the repo, set `MONGODB_URI` and `DB_NAME`, and allow the host in Atlas Network Access.
 
 ## Add content
 

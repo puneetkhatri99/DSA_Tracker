@@ -1,0 +1,21 @@
+# Vercel reads this file: where the FastAPI app is, what it needs at runtime, and how to build the React frontend.
+# Local development and Docker use backend/requirements.txt (the same packages plus uvicorn and the test tools).
+[project]
+name = "dsa-tracker"
+version = "1.0.0"
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi==0.142.2",
+    "pymongo==4.18.2",
+    "pwdlib[argon2]==0.3.1",
+    "pydantic-settings==2.15.0",
+]
+
+[tool.vercel]
+entrypoint = "backend.app.main:app"
+
+[tool.vercel.scripts]
+build = "cd frontend && npm ci && npm run build"
+
+[tool.vercel.fastapi.static]
+cdn = true   # serve the built site from the CDN even though the app has middleware

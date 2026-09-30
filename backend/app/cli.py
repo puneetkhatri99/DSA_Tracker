@@ -14,7 +14,7 @@ from pydantic import ValidationError
 
 from .auth import hash_password
 from .config import CONTENT
-from .db import close, connect, db, now
+from .db import close, connect, db, ensure_indexes, now
 from .models import Meta, QState, Roadmap
 
 
@@ -107,6 +107,7 @@ async def main():
             sys.exit('Passwords must match and be at least 8 characters.')
     await connect()
     try:
+        await ensure_indexes()
         if args.cmd == 'seed':
             await seed(args.force_notes)
         elif args.cmd == 'create-admin':
