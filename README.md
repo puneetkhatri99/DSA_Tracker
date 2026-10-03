@@ -2,7 +2,7 @@
 
 Two Java DSA roadmaps plus Java notes, with accounts so you and the people you invite each keep your own progress.
 
-- **Learning Series**: Striver's A2Z sheet in his order, 415 questions. The star-pattern printing problems are left out, and problems the sheet repeats are merged into one (the extra copies' links become chips). Each question links to LeetCode and GFG where the problem exists there, plus Striver's TUF page, video and article.
+- **Learning Series**: Striver's A2Z sheet plus five easy warm-ups, 420 questions, ordered so that every question only needs what came before it. The star-pattern printing problems are left out, and problems the sheet repeats are merged into one (the extra copies' links become chips). Each question links to LeetCode and GFG where the problem exists there, plus Striver's TUF page, video and article.
 - **Practice 50**: 20 easy, 20 medium and 10 hard well-known interview problems (NeetCode 150 / Blind 75 / LeetCode 150) that are **not** in A2Z. They test you on problems you haven't seen, and the topics are mixed within each difficulty.
 
 The backend is FastAPI + MongoDB (`backend/`), the frontend is React + TypeScript built with Vite (`frontend/`). In production FastAPI serves the built frontend, so it runs as one service.
@@ -59,17 +59,18 @@ The app opens on **Today**, your plan for the day:
 
 - When you tick a question, the app asks **How did it go?** and saves *Solved alone* until you pick something else. Needing a hint or seeing the solution brings the first review forward to tomorrow, and seeing the solution also marks the question to revise.
 - **Timer**: opening an unsolved question (its title or a link chip) starts a timer in the header, and ticking it records the minutes. You can also start or stop it with the timer button on the row. Only one timer runs at a time.
-- **Your own LeetCode link**: questions the sheet has only on GFG or TUF get a **+ LC** chip. Paste a LeetCode URL or just the slug (`two-sum`). It is shown first and used for the title link. The pencil chip edits it; leave it blank to remove it.
+- **LeetCode links**: every Learning Series question has a LeetCode chip. Where the exact problem is not on LeetCode, the chip is **LC (similar)**: a free LeetCode problem that practises the same idea.
+- **Your own LeetCode link**: a question with no LeetCode link at all (in a roadmap you add) gets a **+ LC** chip. Paste a LeetCode URL or just the slug (`two-sum`). It is shown first and used for the title link. The pencil chip edits it; leave it blank to remove it.
 - **Notes and code**: the pencil button opens your notes and a Java code box. Tab indents inside the code box, and the code is shown highlighted once you click away; click it to edit again.
 - Every change is saved to MongoDB within half a second (the header says *Saved*). Each question is saved on its own, so two devices never overwrite each other's work.
 
 ## How the roadmap works
 
-- The Learning Series follows Striver's step order (basics → sorting → arrays → … → graphs → DP → tries), and each step's sub-steps are shown as groups. The **Topic map** shows which steps build on which.
+- The Learning Series follows Striver's steps (basics → sorting → arrays → bits → maths → hashing → binary search → strings → sliding window → recursion → … → graphs → hard backtracking → DP → tries), and each step's sub-steps are shown as groups. Inside a group the questions go from the building block to the problems that use it, easier ones first, with the Hard ones at the end of the group. The **Topic map** shows which steps build on which.
 - A topic counts as done once 70% of its questions are solved (`PREREQ_DONE` in `frontend/src/lib.ts`; 1.0 = every question).
 - **Next up** jumps to the first unsolved question, following the sheet's order. It respects your filters.
 - Every Learning Series question carries Striver's **pattern** tags (Two Pointer, Monotonic Stack / Queue, Search on Answer …). The pattern filter shows one pattern across all topics.
-- Striver sorts his questions into three tiers: basic, core and pro. Pro questions are harder or asked less often, and show a **Pro** tag. Choose **Essentials only** in the filter to hide them. The counts and Next up follow the filter.
+- Striver sorts his questions into three tiers: basic, core and pro. Pro questions are harder or asked less often, and show a **Pro** tag. A Pro question that is on three or more of Blind 75, NeetCode 150, LeetCode Top Interview 150, Top 100 Liked and LeetCode 75 is counted as core here. Choose **Essentials only** in the filter to hide them. The counts and Next up follow the filter.
 
 ## Spaced repetition
 
