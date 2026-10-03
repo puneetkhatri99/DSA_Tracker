@@ -73,7 +73,7 @@ function CodeBox({ id }: { id: string }) {
 }
 
 export function QuestionRow({ q, stats }: { q: Question; stats: Record<string, TopicStat> }) {
-  const { st, setQ, solve, review, asking, setAsking, timer, startTimer, stopTimer, openNotes, setOpenNote } = useStore();
+  const { st, setQ, solve, review, timer, startTimer, stopTimer, openNotes, setOpenNote } = useStore();
   const s = st(q.id);
   const locked = q.needs.some(n => !stats[n]?.met);
   const reviewDue = isDue(s);
@@ -86,8 +86,8 @@ export function QuestionRow({ q, stats }: { q: Question; stats: Record<string, T
   return (
     <div className={`q ${s.done ? 'done' : ''} ${reviewDue ? 'due' : ''} ${locked && !s.done ? 'locked' : ''}`} data-id={q.id}>
       <input type="checkbox" checked={!!s.done} aria-label="Solved" onChange={e => {
-        if (e.target.checked) { solve(q.id, 'alone'); setAsking(q.id, true); } // "alone" until you say otherwise
-        else { setAsking(q.id, false); setQ(q.id, { done: '', lvl: 0, due: '', how: '', mins: 0 }); }
+        if (e.target.checked) solve(q.id, 'alone'); // "alone" until you pick otherwise in the row's dropdown
+        else setQ(q.id, { done: '', lvl: 0, due: '', how: '', mins: 0 });
       }} />
       <a className="qt" href={s.lc || q.url} target="_blank" rel="noopener" onClick={onOpen}>{q.title}</a>
       <span className="meta">
@@ -98,12 +98,14 @@ export function QuestionRow({ q, stats }: { q: Question; stats: Record<string, T
         {q.needs.length > 0 && <span className="needs">{q.needs.map(n => <Chip key={n} tid={n} stats={stats} />)}</span>}
       </span>
       <span className="acts">
-        {asking.has(q.id) && <span className="how">How did it go? {(Object.keys(HOW) as How[]).map(k =>
-          <button key={k} className={s.how === k ? 'on' : ''} onClick={() => { setAsking(q.id, false); solve(q.id, k); }}>{HOW[k]}</button>)}</span>}
+        {/* How it went sets the next review, so changing it later reschedules the question. */}
+        {s.done && <select className="select how" aria-label="How did it go?" value={s.how || 'alone'}
+          onChange={e => solve(q.id, e.target.value as How)}>
+          {(Object.keys(HOW) as How[]).map(k => <option key={k} value={k}>{HOW[k]}</option>)}</select>}
         {reviewDue && <span className="review">Review due
           <button data-act="recall" onClick={() => review(q.id, true)}><CheckIcon />Remembered</button>
           <button data-act="forgot" onClick={() => review(q.id, false)}><XIcon />Forgot</button></span>}
-        {info && <small title={`Solved ${s.done}${s.how ? ` (${HOW[s.how].toLowerCase()})` : ''}${s.due ? ', next review ' + s.due : ''}`}>{info}</small>}
+        {info && <small title={`Solved ${s.done}${s.due ? ', next review ' + s.due : ''}`}>{info}</small>}
         <button className={`icon ${timing ? 'on' : ''}`} data-act="timer" title={timing ? 'Stop timer' : 'Start timer'} aria-label={timing ? 'Stop timer' : 'Start timer'}
           onClick={() => (timing ? stopTimer() : startTimer(q.id))}><TimerIcon /></button>
         {q.video && <a className="icon" href={q.video} target="_blank" rel="noopener" title="Video solution" aria-label="Video solution"><PlayCircleIcon /></a>}

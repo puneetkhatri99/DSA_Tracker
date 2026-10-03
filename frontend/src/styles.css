@@ -84,7 +84,7 @@ main { max-width: 1080px; margin: 0 auto; padding: 32px 24px 96px; }
 button.primary { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border: 0; border-radius: 8px;
   background: var(--accent); color: var(--on-accent); font-weight: 550; white-space: nowrap; transition: filter .15s, transform .1s; }
 button.primary:hover { filter: brightness(1.08); }
-button.primary:active, .btn:active, .empty button:active, .review button:active, .how button:active { transform: scale(.98); }
+button.primary:active, .btn:active, .empty button:active, .review button:active { transform: scale(.98); }
 .btn { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px;
   background: var(--panel); color: var(--text); font-size: 14px; font-weight: 500; white-space: nowrap; transition: border-color .15s, color .15s; }
 .btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); text-decoration: none; }
@@ -185,11 +185,11 @@ button.primary kbd { border: 0; background: color-mix(in srgb, var(--on-accent) 
   .q .icon:not(.on) { opacity: 0; }
   .q:hover .icon, .q:focus-within .icon { opacity: 1; }
 }
-.how { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-right: 6px; font-size: 12px; color: var(--muted); }
+.q select.how { height: 26px; margin-right: 6px; padding: 0 28px 0 10px; border-radius: 999px; font-size: 12px; color: var(--muted); }
 .review { display: inline-flex; align-items: center; gap: 6px; margin-right: 6px; font-size: 12px; font-weight: 600; color: var(--med); }
-.review button, .how button { display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 10px; border: 1px solid var(--line);
+.review button { display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 10px; border: 1px solid var(--line);
   border-radius: 999px; background: var(--panel); font-size: 12px; font-weight: 500; color: var(--text); }
-.review button:hover, .how button:hover, .how button.on { border-color: var(--accent); color: var(--accent); }
+.review button:hover { border-color: var(--accent); color: var(--accent); }
 .panel { flex-basis: 100%; display: grid; gap: 8px; margin: 2px 0 6px 30px; }
 .panel textarea { width: 100%; min-height: 76px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px;
   background: var(--bg); font-size: 14px; resize: vertical; }

@@ -18,7 +18,6 @@ function useStoreValue(user: User, content: Content, initial: Progress & { $meta
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
   const [timer, setTimer] = useState<Timer | null>(null);
   const [status, setStatus] = useState({ text: '', bad: false });
-  const [asking, setAsking] = useState<Set<string>>(new Set());     // rows showing "How did it go?"
   const [openNotes, setOpenNotes] = useState<Set<string>>(new Set()); // rows with the notes panel open
   const [openTopics, setOpenTopics] = useState<Set<string>>(new Set());
   const lastRoadmap = useRef(content.roadmaps[0].id);
@@ -104,7 +103,7 @@ function useStoreValue(user: User, content: Content, initial: Progress & { $meta
     user, logout, roadmaps: content.roadmaps, rmById, byId, notes, setNotes,
     progress, meta, st: (id: string): QState => progress[id] || {}, setQ, setMeta, solve, review,
     status, showStatus, filters, setFilters, timer, startTimer, stopTimer,
-    asking, setAsking: useCallback(toggle(setAsking), []), openNotes, setOpenNote: useCallback(toggle(setOpenNotes), []),
+    openNotes, setOpenNote: useCallback(toggle(setOpenNotes), []),
     openTopics, setOpenTopic: useCallback(toggle(setOpenTopics), []), lastRoadmap,
   };
 }
