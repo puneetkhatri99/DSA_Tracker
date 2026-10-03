@@ -1,0 +1,179 @@
+{
+  "easy": [
+    {
+      "q": "What does this print?",
+      "code": "String a = \"hi\";\nString b = new String(\"hi\");\nString c = \"hi\";\nSystem.out.println((a == b) + \" \" + a.equals(b) + \" \" + (a == c));",
+      "options": [
+        "`true true true`",
+        "`false true true`",
+        "`false true false`",
+        "`false false true`"
+      ],
+      "answer": 1,
+      "why": "`==` compares references (is it the same object?), while `equals` compares the characters. `new String(\"hi\")` always creates a new object, so `a == b` is false and `a.equals(b)` is true. String literals are interned (pooled), so `a` and `c` refer to the same object and `a == c` happens to be true.\n\nThat accident is why `==` seems to work in small tests and then fails on strings built at runtime (from `substring`, a `StringBuilder`, or input).\n\nTakeaway: compare string content with `equals` (or `equalsIgnoreCase`), never `==`."
+    },
+    {
+      "q": "You build a string of n characters one character at a time. What is the tight total running time with `s += c` in a loop, versus `sb.append(c)` on a `StringBuilder`?",
+      "options": [
+        "O(n) vs O(n): the compiler turns `+=` into a `StringBuilder` anyway",
+        "O(n log n) vs O(n): the string grows by doubling",
+        "O(n²) vs O(n log n): appending is O(log n) each",
+        "O(n²) vs O(n): each `+=` copies the whole string"
+      ],
+      "answer": 3,
+      "why": "Strings are immutable, so every `s += c` allocates a new string and copies all current characters into it: 1 + 2 + ... + n = O(n²) characters copied in total.\n\nThe compiler does use a builder (or an `invokedynamic` concat) for a single `+=` expression, but it makes a fresh one each iteration and still copies the whole string, so the loop stays quadratic. `StringBuilder` writes into a buffer that doubles when full, so each `append` is amortised O(1) and the whole build is O(n).\n\nTakeaway: build strings in loops with `StringBuilder`, then call `toString()` once."
+    },
+    {
+      "q": "Using the rule 'subtract a symbol's value if the next symbol is larger, otherwise add it', what does `romanToInt(\"XLIX\")` return?",
+      "options": [
+        "49",
+        "71",
+        "51",
+        "69"
+      ],
+      "answer": 0,
+      "why": "Scan left to right: `X (10)` comes before the larger `L (50)` → −10; `L (50)` comes before `I (1)` → +50; `I (1)` comes before the larger `X (10)` → −1; the last `X` has no next symbol → +10. Total: −10 + 50 − 1 + 10 = 49.\n\nAdding everything gives 71, and applying the subtraction to only one of the two pairs gives 51 or 69. The rule works because a smaller symbol appears before a larger one only in the six subtractive pairs (IV, IX, XL, XC, CD, CM).\n\nTakeaway: one pass with a one-symbol look-ahead, O(n) time and O(1) space."
+    },
+    {
+      "q": "What is the maximum nesting depth of `\"(()(()))()\"`, using a counter that goes +1 on `(` and −1 on `)`?",
+      "options": [
+        "5",
+        "2",
+        "3",
+        "4"
+      ],
+      "answer": 2,
+      "why": "Track the counter: `( → 1`, `( → 2`, `) → 1`, `( → 2`, `( → 3`, `) → 2`, `) → 1`, `) → 0`, `( → 1`, `) → 0`. The highest value reached is 3: the innermost `()` sits inside `(())`, which sits inside the outer pair.\n\n5 is the number of `()` pairs, not their depth. A counter is enough because there's only one bracket type: a stack would hold nothing but `(` characters, so its size is all the information it carries.\n\nTakeaway: for single-type parentheses, replace the stack with an integer depth: O(n) time, O(1) space."
+    },
+    {
+      "q": "This anagram check uses `int[26]` and `c - 'a'`. What happens on `isAnagram(\"Ab\", \"bA\")`?",
+      "code": "boolean isAnagram(String s, String t) {\n    if (s.length() != t.length()) return false;\n    int[] freq = new int[26];\n    for (int i = 0; i < s.length(); i++) {\n        freq[s.charAt(i) - 'a']++;\n        freq[t.charAt(i) - 'a']--;\n    }\n    for (int f : freq) if (f != 0) return false;\n    return true;\n}",
+      "options": [
+        "It returns `true`, because both strings use the same letters",
+        "It throws `ArrayIndexOutOfBoundsException`",
+        "It returns `false`, because uppercase makes them different",
+        "It doesn't compile, because `char - char` isn't an `int`"
+      ],
+      "answer": 1,
+      "why": "`'A'` is 65 and `'a'` is 97, so `'A' - 'a'` is −32 and `freq[-32]` throws `ArrayIndexOutOfBoundsException` on the very first character. Subtracting two chars is legal Java: both are promoted to `int`, which is exactly why `c - 'a'` works as an index for lowercase letters.\n\nThe `int[26]` trick silently assumes the input contains only `'a'` to `'z'`. It never gets as far as returning `true` or `false` here.\n\nTakeaway: check the alphabet in the constraints; for mixed case or digits use `int[128]` indexed by the char itself, or lowercase first if the problem is case-insensitive."
+    }
+  ],
+  "medium": [
+    {
+      "q": "Following the atoi rules (skip leading spaces, read one optional sign, read digits until the first non-digit, clamp on overflow), what does `myAtoi(\"   -0012a42\")` return?",
+      "options": [
+        "-1242",
+        "0",
+        "-12",
+        "12"
+      ],
+      "answer": 2,
+      "why": "Step by step: skip the three spaces; read `-`, so `sign = -1`; read the digits `0, 0, 1, 2` (leading zeros just keep `res` at 0 until the 1), giving 12; stop at `a`, the first non-digit. Nothing after it is read, so the `42` is ignored and the result is `-1 * 12 = -12`.\n\nGluing the digits around the letter together (-1242) ignores the 'stop at the first non-digit' rule. 0 is right only when the first non-space character isn't a sign or digit (like `\"a12\"`), and 12 drops the sign.\n\nTakeaway: atoi is a fixed sequence of stages (spaces → sign → digits → stop), each guarded by `i < n`, plus an overflow check before every `res * 10 + d`."
+    },
+    {
+      "q": "This `reverseWords` forgot to `trim()` before splitting. What does it return for `\"  hello   world  \"` (quotes added to show the spaces)?",
+      "code": "String[] words = s.split(\"\\\\s+\");\nStringBuilder sb = new StringBuilder();\nfor (int i = words.length - 1; i >= 0; i--) {\n    sb.append(words[i]);\n    if (i > 0) sb.append(' ');\n}\nreturn sb.toString();",
+      "options": [
+        "`\"world hello\"`",
+        "`\" world hello\"`",
+        "`\"world  hello\"`",
+        "`\"world hello \"`"
+      ],
+      "answer": 3,
+      "why": "`split(\"\\\\s+\")` splits on runs of whitespace, so the middle spaces collapse, but a **leading** separator produces an empty first token while trailing empty tokens are dropped. So `words = [\"\", \"hello\", \"world\"]`.\n\nThe loop appends `\"world\"`, a space, `\"hello\"`, a space, and finally the empty string, giving `\"world hello \"` with a trailing space. Calling `s.trim()` first removes the empty token and gives the expected `\"world hello\"`.\n\nTakeaway: `trim()` before `split(\"\\\\s+\")`, and remember that `split` keeps leading empty strings but drops trailing ones."
+    },
+    {
+      "q": "This longest-palindrome code only expands around single characters. What does it return for `\"abba\"`?",
+      "code": "int start = 0, end = 0;\nfor (int c = 0; c < s.length(); c++) {\n    int len = expand(s, c, c);   // grows while s[l] == s[r], returns length\n    if (len > end - start + 1) {\n        start = c - (len - 1) / 2;\n        end = c + len / 2;\n    }\n}\nreturn s.substring(start, end + 1);",
+      "options": [
+        "`\"a\"`",
+        "`\"abba\"`",
+        "`\"bb\"`",
+        "`\"b\"`"
+      ],
+      "answer": 0,
+      "why": "`expand(s, c, c)` starts with `l == r`, so it can only find **odd-length** palindromes centred on a character. In `\"abba\"` every odd palindrome has length 1 (at `c = 1` the neighbours are `'a'` and `'b'`, which differ), so `len` never beats the starting window `[0, 0]` and the result is `\"a\"`, the first character.\n\nThe real answer `\"abba\"` has even length: its centre is the gap between the two `b`s, and only `expand(s, c, c + 1)` checks gaps. There are 2n − 1 centres in total: n characters plus n − 1 gaps.\n\nTakeaway: always try both `expand(s, c, c)` and `expand(s, c, c + 1)`; O(n²) time, O(1) space."
+    },
+    {
+      "q": "Beauty of a string = highest character frequency − lowest non-zero frequency. To sum the beauty of all substrings of a lowercase string of length n, you fix a start `i`, extend the end `j`, update an `int[26]` incrementally and scan it after each step. What is the tightest time complexity?",
+      "options": [
+        "O(n³)",
+        "O(26 · n²)",
+        "O(26 · n)",
+        "O(n² log n)"
+      ],
+      "answer": 1,
+      "why": "There are about n²/2 `(i, j)` pairs, i.e. O(n²) substrings. For each one the frequency array is updated in O(1) (only `s[j]` was added) and scanned in O(26) for the max and the min non-zero count, so the total is O(26 · n²), which is O(n²).\n\nO(n³) is what you get if you recount every substring from scratch instead of extending the previous one. O(26 · n) would require not enumerating the O(n²) substrings at all, which this method does, and nothing here is sorted or kept in a heap, so there is no log factor.\n\nTakeaway: when enumerating substrings by extending the end, carry the state (counts) forward instead of rebuilding it."
+    },
+    {
+      "q": "In count-and-say, each term reads the previous one aloud in groups of equal adjacent digits (`\"21\"` is one 2, one 1 → `\"1211\"`). What comes after `\"1211\"`?",
+      "options": [
+        "`\"312211\"`",
+        "`\"11121111\"`",
+        "`\"111221\"`",
+        "`\"3112\"`"
+      ],
+      "answer": 2,
+      "why": "Split `1211` into runs of equal adjacent digits: `1`, `2`, `11`. Read each run as count then digit: one 1 → `11`, one 2 → `12`, two 1s → `21`, giving `111221`.\n\nReading every character separately (`11121111`) ignores that adjacent equal digits form one group, and counting totals over the whole string ('three 1s, one 2' → `3112`) ignores order. `312211` is the term after `111221`, one step too far.\n\nTakeaway: count-and-say is run-length encoding; scan with two pointers to find each run and append count + digit to a `StringBuilder`."
+    }
+  ],
+  "hard": [
+    {
+      "q": "What is the minimum number of bracket reversals (flipping `{` ↔ `}`) needed to balance `\"}{{}}{{{\"`?",
+      "options": [
+        "2",
+        "3",
+        "4",
+        "-1"
+      ],
+      "answer": 1,
+      "why": "First cancel every matched `{...}` with a counter. What's left is `close = 1` unmatched `}` at the front and `open = 3` unmatched `{` at the end, the shape `}{{{`. Unmatched `}`s fix in pairs by flipping one of each two (`}}` → `{}`), costing `ceil(close / 2)`; the same goes for `{`s with `ceil(open / 2)`. A leftover `}{` needs both flipped, and the two ceilings account for that. Total: `ceil(1/2) + ceil(3/2) = 1 + 2 = 3` (e.g. `}{{{` → `{}{}`).\n\nThe tempting `(open + close) / 2 = 2` forgets that a `}{` leftover costs 2 flips, not 1. -1 is only for odd lengths, and this one is 8. A brute force over all flip sets confirms 3.\n\nTakeaway: remove balanced pairs, then answer `ceil(open / 2) + ceil(close / 2)`, O(n) time and O(1) space."
+    },
+    {
+      "q": "An atoi implementation skips the overflow check and simply does `res = res * 10 + d` on an `int res`. What does it return for `\"2147483648\"` (one more than `Integer.MAX_VALUE`)?",
+      "options": [
+        "-2147483648",
+        "2147483647",
+        "214748364",
+        "It throws `NumberFormatException`"
+      ],
+      "answer": 0,
+      "why": "After nine digits `res = 214748364`. The last step computes `214748364 * 10 + 8 = 2147483648`, which doesn't fit in an `int` and silently wraps to `-2147483648`; Java `int` arithmetic never throws on overflow. With sign +1 the method returns a negative number for a positive input.\n\nThe spec asks to clamp to `2147483647`, and that needs a check **before** the multiply: `if (res > (Integer.MAX_VALUE - d) / 10)` return the clamp for the current sign. `NumberFormatException` comes from `Integer.parseInt`, not from arithmetic.\n\nTakeaway: whenever you build a number digit by digit, check for overflow before `res * 10 + d` (or accumulate in a `long` and clamp as soon as it leaves the `int` range)."
+    },
+    {
+      "q": "To reverse the order of words in a `char[]` in place (single spaces between words), the usual method reverses the whole array, then each word. A teammate does the steps the other way round: each word first, then the whole array. What does their version print?",
+      "code": "char[] a = \"the sky is blue\".toCharArray();\nint n = a.length;\nfor (int i = 0; i < n; ) {          // 1) reverse each word\n    int j = i;\n    while (j < n && a[j] != ' ') j++;\n    reverse(a, i, j - 1);             // swaps a[i..j-1] end to end\n    i = j + 1;\n}\nreverse(a, 0, n - 1);                 // 2) then the whole array\nSystem.out.println(new String(a));",
+      "options": [
+        "`eulb si yks eht`",
+        "`eht yks si eulb`",
+        "`blue is sky the`",
+        "`the sky is blue`"
+      ],
+      "answer": 2,
+      "why": "Both orders print `blue is sky the`: the two steps commute. Follow one letter. In a word at positions a..b, the letter at a + k goes to b − k when its word is reversed, then to n − 1 − (b − k) = (n − 1 − b) + k when the whole array is reversed. The usual order first sends it to n − 1 − a − k, inside the block (n − 1 − b)..(n − 1 − a) where its word now sits, and reversing that block puts it at the same place, (n − 1 − b) + k. Either way, every word lands in its mirrored slot with its letters back in order.\n\n`eulb si yks eht` is the whole-array step alone (every letter mirrored) and `eht yks si eulb` is the per-word step alone. Expecting the two steps to cancel back to `the sky is blue` is the other common slip: they would cancel only if both reversed the same ranges.\n\nTakeaway: reverse-all plus reverse-each-word, in either order, reverses the word order in O(n) time and O(1) extra space. With extra spaces the same idea works, but you also have to squeeze the spaces."
+    },
+    {
+      "q": "Expand-around-centre for the longest palindromic substring is O(n²) in the worst case. Which input of length n actually makes it do Θ(n²) work?",
+      "options": [
+        "One long palindrome with distinct halves, like `\"abcd…dcba\"`",
+        "All characters different, like `\"abcdef…\"`",
+        "A short pattern repeated, like `\"abcabcabc…\"`",
+        "One character repeated, like `\"aaaa…a\"`"
+      ],
+      "answer": 3,
+      "why": "The cost is the total number of successful expansion steps over all 2n − 1 centres. In `\"aaaa…a\"` every centre expands until it hits an end of the string, so centre `c` takes about `min(c, n − c)` steps and the sum is about n²/4: Θ(n²). Measured for n = 2000: about 2,000,000 steps, against at most about 3,000 for the other three inputs.\n\nIn `\"abcd…dcba\"` only the middle centre expands far (about n/2 steps), so the total is O(n). With all-distinct characters or `\"abcabc…\"` every centre stops within one step, because no two characters at distance 1 or 2 match.\n\nTakeaway: expand-around-centre is quadratic only on highly repetitive input; Manacher's algorithm makes even that O(n)."
+    },
+    {
+      "q": "This attempt at Remove Outermost Parentheses increments `depth` **before** checking it. What does it return for `\"(()())(())\"`?",
+      "code": "StringBuilder sb = new StringBuilder();\nint depth = 0;\nfor (char c : s.toCharArray()) {\n    if (c == '(') {\n        depth++;\n        if (depth > 0) sb.append(c);\n    } else {\n        depth--;\n        if (depth > 0) sb.append(c);\n    }\n}\nreturn sb.toString();",
+      "options": [
+        "`\"()()()\"`",
+        "`\"(()()(()\"`",
+        "`\"(()())(())\"`",
+        "`\"()())())\"`"
+      ],
+      "answer": 1,
+      "why": "After `depth++` the depth is at least 1, so `depth > 0` is always true for `(`: every opening bracket is kept, including the outer ones. For `)` the check runs after `depth--`, so each outer `)` (which brings depth back to 0) is correctly dropped. Result: `(()()` + `(()` = `(()()(()`, which isn't even balanced.\n\nThe correct version checks `depth > 0` **before** `depth++` for `(` and after `depth--` for `)`, so a bracket is kept only when it isn't at depth 0, giving `()()()`. `()())())` would be the mirror-image bug (outer `(` dropped, outer `)` kept).\n\nTakeaway: in depth-counter problems decide carefully whether each check happens before or after the update, and trace one primitive like `(())` by hand to confirm."
+    }
+  ]
+}

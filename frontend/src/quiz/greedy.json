@@ -1,0 +1,178 @@
+{
+  "easy": [
+    {
+      "q": "Assign Cookies: each child gets at most one cookie, and child i is content if the cookie's size ≥ `greed[i]`. With `greed = [10, 9, 8, 7]` and `size = [5, 6, 7, 10]`, how many children can be content at most?",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "answer": 1,
+      "why": "Sorted, greed = [7, 8, 9, 10] and size = [5, 6, 7, 10]. Walk the cookies smallest first: 5 and 6 satisfy nobody, 7 goes to the child with greed 7, and 10 goes to the child with greed 8, so the answer is 2.\n\nRunning the same two-pointer loop without sorting gives 1: the first child (greed 10) holds the pointer until the last cookie. Matching each cookie to the least greedy child it can satisfy is safe, because any solution that spends a bigger cookie on that child can swap it for the smaller one and lose nothing.\n\n**Takeaway:** sort both lists, then give the smallest sufficient cookie to the least greedy child."
+    },
+    {
+      "q": "For which problem does \"take items in decreasing value/weight ratio\" always give the optimal answer?",
+      "options": [
+        "0/1 knapsack: each item is taken whole or not at all",
+        "0/1 knapsack, as long as all the weights are distinct",
+        "Fractional knapsack: any fraction of an item may be taken",
+        "Bounded knapsack: up to 2 whole copies of each item"
+      ],
+      "answer": 2,
+      "why": "In the fractional version, if a solution uses weight on a worse-ratio item while a better-ratio item is not fully taken, moving that weight to the better item raises the value, so best-ratio-first is optimal (exchange argument).\n\nWith whole items greedy fails, even with distinct weights: capacity 50 and items (value 60, weight 10), (100, 20), (120, 30) have ratios 6, 5, 4. Greedy takes the first two for 160, but the last two give 220. Fractional greedy on the same input gets 240 by taking 2/3 of the third item.\n\n**Takeaway:** ratio greedy relies on items being divisible; for whole items, use DP."
+    },
+    {
+      "q": "Lemonade Change: lemonade costs $5 and customers pay with $5, $10 or $20 bills, in order, starting with no change. Which rule for giving $15 change to a $20 customer is always correct?",
+      "options": [
+        "Give $10 + $5 if you can, otherwise three $5s",
+        "Give three $5s if you can, otherwise $10 + $5",
+        "Any split works, since every split leaves the same total cash",
+        "Give three $5s whenever you hold more $5s than $10s"
+      ],
+      "answer": 0,
+      "why": "A $5 is useful as change for both $10 and $20 customers, while a $10 only helps a $20 customer, so spending the $10 keeps the more flexible bills. Any solution that hands out three $5s can swap them for $10 + $5 and end up with at least as many $5s.\n\nConcrete failure for the other rules: bills `[5, 5, 5, 5, 10, 20, 10, 10]`. Just before the $20 you hold three $5s and one $10. Giving $10 + $5 leaves two $5s, enough for the two $10 customers after. Giving three $5s leaves none, and the next $10 customer can't get change. The total cash is the same either way; the mix of bills is what matters.\n\n**Takeaway:** when two choices tie on the obvious measure, keep the resource that is useful in more future cases."
+    },
+    {
+      "q": "Jump Game I (`nums[i]` is the maximum jump length from index i). What does this greedy `canJump` do on `nums = [3, 2, 1, 0, 4]`?",
+      "code": "boolean canJump(int[] nums) {\n    int reach = 0;\n    for (int i = 0; i < nums.length; i++) {\n        if (i > reach) return false;\n        reach = Math.max(reach, i + nums[i]);\n    }\n    return true;\n}",
+      "options": [
+        "Returns true: index 0 jumps 3 to index 3, then on to the end",
+        "Returns false at i = 3, because `nums[3]` is 0",
+        "Returns false at i = 4, because `reach` is stuck at 3",
+        "Returns true, because the jump lengths add up to more than 4"
+      ],
+      "answer": 2,
+      "why": "Trace `reach`: i = 0 → max(0, 0+3) = 3; i = 1 → max(3, 1+2) = 3; i = 2 → max(3, 2+1) = 3; i = 3 → max(3, 3+0) = 3. At i = 4, `4 > reach`, so it returns false: every reachable index only gets you as far as index 3.\n\nThe zero alone is not the problem: `[3, 2, 2, 0, 4]` also has a zero at index 3, but index 2 reaches 4 and the answer is true. Tracking only the farthest reach is enough because every index up to it is reachable (you can always jump short).\n\n**Takeaway:** Jump Game I is one O(n) sweep that keeps the farthest reachable index."
+    },
+    {
+      "q": "N Meetings in One Room: choose the maximum number of non-overlapping meetings. You sort, then scan and keep every meeting that starts after the last kept one ends. What should you sort by?",
+      "options": [
+        "Start time, earliest first",
+        "Duration, shortest first",
+        "Duration, longest first",
+        "End time, earliest first"
+      ],
+      "answer": 3,
+      "why": "Ending as early as possible leaves the most room for the rest. Exchange argument: in any optimal schedule, replace its first meeting with the earliest-ending one; it ends no later, so everything after still fits.\n\nEach other key has a small counterexample. Start time on `[1,10], [2,3], [4,5]` keeps `[1,10]` and gets 1, but `[2,3], [4,5]` gives 2; longest-first fails the same way. Shortest-first on `[1,5], [4,7], [6,10]` keeps `[4,7]`, which clashes with both others, so it gets 1 instead of 2.\n\n**Takeaway:** for \"maximum non-overlapping\", sort by end time."
+    }
+  ],
+  "medium": [
+    {
+      "q": "This Merge Intervals extends the last block with `last[1] = cur[1]` instead of `Math.max`. What does it return for `[[1, 4], [2, 3]]`?",
+      "code": "Arrays.sort(intervals, (a, b) -> Integer.compare(a[0], b[0]));\nList<int[]> res = new ArrayList<>();\nfor (int[] cur : intervals) {\n    if (res.isEmpty() || res.get(res.size() - 1)[1] < cur[0]) res.add(cur);\n    else res.get(res.size() - 1)[1] = cur[1];   // bug\n}",
+      "options": [
+        "[[1, 4]]",
+        "[[1, 3]]",
+        "[[1, 4], [2, 3]]",
+        "[[2, 4]]"
+      ],
+      "answer": 1,
+      "why": "Sorted by start the order stays the same. `[1,4]` is added; `[2,3]` starts at 2 ≤ 4, so it overlaps, and the bug sets the end to 3, giving `[[1, 3]]`, which loses the part from 3 to 4.\n\nSorting by start puts the *starts* in order, but an interval nested inside the current block can still end earlier, so the end must be `Math.max(last[1], cur[1])`.\n\n**Takeaway:** a merged block ends at the maximum of all the ends it absorbed, not at the latest one."
+    },
+    {
+      "q": "Insert Interval: the list is already sorted by start and non-overlapping, and you insert one new interval, merging where needed. What is the best time complexity, with n intervals?",
+      "options": [
+        "O(n): one pass over the left, overlapping and right parts",
+        "O(n log n): append it, then sort and merge everything",
+        "O(log n): binary-search the position, then merge there",
+        "O(n²): rescan the list after every single merge"
+      ],
+      "answer": 0,
+      "why": "Because the input is sorted and disjoint, one pass does it: copy the intervals that end before the new start, absorb every interval with `start ≤ newEnd` by widening `[s, e]`, add the merged interval, then copy the rest.\n\nAppending and re-sorting is correct but throws away the order you were given. Binary search can find where the overlap begins in O(log n), but you still build an output of up to n + 1 intervals, so the total is O(n).\n\n**Takeaway:** when the input is already sorted, look for a linear merge instead of sorting again."
+    },
+    {
+      "q": "Minimum Platforms sorts `arr` and `dep` **separately**, so a departure is no longer paired with its own train's arrival. Why is the answer still correct?",
+      "options": [
+        "It isn't; it is only correct if trains come in arrival order",
+        "Each departure is after its arrival, so the pairs stay aligned",
+        "Trains present at time t = arrivals so far − departures so far",
+        "Overlapping pairs are counted, and pair counts ignore order"
+      ],
+      "answer": 2,
+      "why": "The number of platforms in use at any moment is how many trains have arrived minus how many have left, and that count doesn't care which train is which. Walking the two sorted lists as events (`plat++` on an arrival, `plat--` on a departure) and keeping the running maximum gives the peak, which is the answer.\n\nSorting does break the pairs: trains 900–1200 and 905–910 become `arr = [900, 905]`, `dep = [910, 1200]`, so arrival 900 lines up with the other train's departure, and the peak is still the correct 2. Use `arr[i] <= dep[j]` when a train arriving at the exact departure time still needs its own platform.\n\n**Takeaway:** when only \"how many at once\" matters, turn intervals into +1 / −1 events."
+    },
+    {
+      "q": "Jump Game II (minimum jumps; the last index is always reachable). This version loops while `i < nums.length` instead of `i < nums.length - 1`. What does it return for `nums = [2, 3, 1, 1, 4]`?",
+      "code": "int jumps = 0, curEnd = 0, farthest = 0;\nfor (int i = 0; i < nums.length; i++) {        // bug: should stop at n - 1\n    farthest = Math.max(farthest, i + nums[i]);\n    if (i == curEnd) { jumps++; curEnd = farthest; }\n}\nreturn jumps;",
+      "options": [
+        "1",
+        "2",
+        "4",
+        "3"
+      ],
+      "answer": 3,
+      "why": "This is BFS by levels: `curEnd` is the farthest index reachable with `jumps` jumps. Trace: i = 0 ends level 0, so jumps = 1 and curEnd = 2; at i = 2, farthest is 4, so jumps = 2 and curEnd = 4. The correct loop stops before i = 4 and returns 2 (0 → 1 → 4).\n\nThe buggy loop also visits i = 4, sees `i == curEnd`, and counts a third jump out of the last index, returning 3. The same bug returns 1 for `[0]`, where the answer is 0.\n\n**Takeaway:** you jump *from* indices 0..n−2; once a level covers the last index, stop counting."
+    },
+    {
+      "q": "Shortest Job First: five processes all arrive at time 0 with burst times `[4, 3, 7, 1, 2]`, and the CPU runs one at a time without preemption. Running the shortest first, what is the average waiting time (time before a process starts)?",
+      "options": [
+        "4",
+        "7.4",
+        "8",
+        "9.6"
+      ],
+      "answer": 0,
+      "why": "Sorted: 1, 2, 3, 4, 7. They start at 0, 1, 3, 6, 10, so the total wait is 20 and the average is 4.\n\n7.4 is the average *completion* time (1 + 3 + 6 + 10 + 17 = 37, over 5). 8 is the average wait in the given order (0 + 4 + 7 + 14 + 15 = 40), and 9.6 is longest-first. Shortest-first is optimal by an exchange argument: if a job of length a runs right before a shorter one of length b, swapping them makes the short job wait a less and the long one wait b more, a net change of b − a < 0.\n\n**Takeaway:** to minimise total waiting time, run the shortest jobs first."
+    }
+  ],
+  "hard": [
+    {
+      "q": "Why is \"take the meeting that ends earliest, then repeat on the meetings that start after it\" guaranteed to find the maximum number of non-overlapping meetings?",
+      "options": [
+        "Every optimal schedule must include the earliest-ending meeting",
+        "Swapping it in for an optimal schedule's first meeting keeps it valid",
+        "The earliest-ending meeting is the shortest, so it blocks the fewest",
+        "Sorting by end time makes the remaining meetings pairwise disjoint"
+      ],
+      "answer": 1,
+      "why": "Exchange argument: let m end earliest and let O be any optimal schedule whose first meeting is f. Since m ends no later than f, every other meeting in O (which starts after f ends) also starts after m ends, so replacing f by m gives a valid schedule of the same size. So *some* optimal schedule starts with m, and what remains is the same problem on the meetings that start after m.\n\nThe first option is too strong: for `[1,3], [2,4], [5,6]`, both `{[1,3], [5,6]}` and `{[2,4], [5,6]}` are optimal. The earliest-ending meeting need not be the shortest: `[1,4]` ends before `[3,5]` but is longer.\n\n**Takeaway:** to prove a greedy choice, show that some optimal answer can be changed to include it without getting worse."
+    },
+    {
+      "q": "Job Sequencing: each job takes one time unit and earns its profit only if it finishes by its deadline. Jobs are taken in decreasing profit, and the standard rule puts each job in the **latest** free slot ≤ its deadline. With the **earliest** free slot instead, what profit do you get for A (deadline 2, profit 100) and B (deadline 1, profit 50)?",
+      "options": [
+        "150: A in slot 2, B in slot 1",
+        "50: B in slot 1, A has no slot left",
+        "100: A takes slot 1, B has no slot left",
+        "It depends on the order A and B are given in"
+      ],
+      "answer": 2,
+      "why": "Sorted by profit, A comes first. The earliest free slot is 1, so A takes it; B has deadline 1 and slot 1 is gone, so B is dropped: profit 100. The standard rule puts A in slot 2, its latest allowed slot, leaving slot 1 for B: profit 150.\n\nWhy latest is safe: slot t can be used by any job with deadline ≥ t, so an earlier slot is usable by more jobs than a later one, and taking the latest slot that works keeps the widely usable slots free. Input order doesn't matter, because the jobs are sorted by profit first.\n\n**Takeaway:** in deadline scheduling, fill each job from its deadline backwards so tight-deadline jobs still fit."
+    },
+    {
+      "q": "Candy: every child gets at least 1 candy, and a child with a higher rating than a neighbour gets more than that neighbour. This version drops `Math.max` from the right-to-left pass. What does it return for `ratings = [1, 2, 3, 1]` (correct: 7)?",
+      "code": "int[] c = new int[n];\nArrays.fill(c, 1);\nfor (int i = 1; i < n; i++)\n    if (ratings[i] > ratings[i - 1]) c[i] = c[i - 1] + 1;\nfor (int i = n - 2; i >= 0; i--)\n    if (ratings[i] > ratings[i + 1]) c[i] = c[i + 1] + 1;   // no Math.max",
+      "options": [
+        "7",
+        "8",
+        "5",
+        "6"
+      ],
+      "answer": 3,
+      "why": "The left pass gives `[1, 2, 3, 1]`. In the right pass only i = 2 beats its right neighbour (3 > 1), and the buggy line overwrites c[2] with c[3] + 1 = 2, so the result is `[1, 2, 2, 1]` = 6. That breaks the left rule: rating 3 now gets the same as rating 2.\n\nWith `Math.max(c[i], c[i + 1] + 1)`, c[2] stays 3 and the total is 7. Each pass enforces one side; the max keeps the other side's requirement, so each child ends with the larger of its two needs.\n\n**Takeaway:** in a two-pass greedy, the second pass must keep what the first one established."
+    },
+    {
+      "q": "Valid Parenthesis String (`'*'` may be `'('`, `')'` or empty) tracks `lo` and `hi`, the fewest and most unmatched `'('` possible so far. This version forgets `lo = Math.max(lo, 0)`. What does it return for `\"(*)\"`?",
+      "code": "int lo = 0, hi = 0;\nfor (char ch : s.toCharArray()) {\n    if (ch == '(') { lo++; hi++; }\n    else if (ch == ')') { lo--; hi--; }\n    else { lo--; hi++; }                 // '*'\n    if (hi < 0) return false;\n    // missing: lo = Math.max(lo, 0);\n}\nreturn lo == 0;",
+      "options": [
+        "false, because lo ends at −1",
+        "true, because lo ends at 0",
+        "false, because hi drops below 0",
+        "true, because hi ends at 1"
+      ],
+      "answer": 0,
+      "why": "Trace: `'('` → lo 1, hi 1; `'*'` → lo 0, hi 2; `')'` → lo −1, hi 1. The final check `lo == 0` fails and it returns false, yet `\"(*)\"` is valid with `*` as empty.\n\nlo = −1 describes reading `*` as `)` and then closing once more, which would close a `(` that was never opened; that reading is impossible, so lo must be clamped to 0 (read that `*` as empty instead). `hi < 0` is the opposite failure: even with every `*` as `(`, there are too many `)`, so no reading works. The clamped version matches brute force on random strings.\n\n**Takeaway:** when you track a range of possible states, clamp it to what is actually reachable after every step."
+    },
+    {
+      "q": "Non-overlapping Intervals asks for the fewest removals so the rest don't overlap (touching, like `[1,2], [2,3]`, is fine). Besides \"sort by end, keep greedily\", which strategy is **also** always optimal?",
+      "options": [
+        "Sort by start; on a clash, remove the new interval and keep the old one",
+        "Sort by length; keep the shortest first, skipping any that clash",
+        "Sort by end, latest first; keep each one that clashes with none kept",
+        "Sort by start; on a clash, remove one and keep whichever ends first"
+      ],
+      "answer": 3,
+      "why": "Of two clashing intervals one must go, and keeping the one that ends earlier leaves at least as much room for everything after: the same exchange argument as sort-by-end (it also matches brute force on random inputs).\n\nKeeping the old one fails on `[1,10], [2,3], [4,5]`: it keeps `[1,10]` and removes 2, but removing only `[1,10]` is optimal; latest-end-first keeps `[1,10]` there too. Shortest-first fails on `[1,5], [4,7], [6,10]`: `[4,7]` clashes with both others and forces 2 removals instead of 1.\n\n**Takeaway:** a greedy rule is safe only if the kept choice is provably never worse; otherwise a 3-interval counterexample usually exists."
+    }
+  ]
+}

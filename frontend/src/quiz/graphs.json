@@ -1,0 +1,181 @@
+{
+  "easy": [
+    {
+      "q": "An undirected graph has these adjacency lists, and neighbours are processed in list order: `0: [1, 2]`, `1: [0, 3]`, `2: [0, 4]`, `3: [1, 5]`, `4: [2]`, `5: [3]`. In what order does a queue-based BFS from 0 visit the nodes?",
+      "options": [
+        "0 1 3 5 2 4",
+        "0 1 2 3 4 5",
+        "0 2 4 1 3 5",
+        "0 2 1 4 3 5"
+      ],
+      "answer": 1,
+      "why": "BFS visits nodes level by level: the source, then everything at distance 1, then distance 2, and so on. Trace the queue: start `[0]`; poll 0, enqueue 1, 2; poll 1, enqueue 3; poll 2, enqueue 4; poll 3, enqueue 5; poll 4; poll 5. That gives `0 1 2 3 4 5` (levels {0}, {1, 2}, {3, 4}, {5}).\n\n`0 1 3 5 2 4` is the recursive **DFS** order, which dives 0 → 1 → 3 → 5 before backtracking to 2. `0 2 4 1 3 5` is what you get if you swap the queue for a stack, and `0 2 1 4 3 5` would need the neighbour lists read backwards.\n\nTakeaway: a FIFO queue processes nodes in order of their distance from the source, which is exactly why BFS gives shortest paths in an unweighted graph."
+    },
+    {
+      "q": "A connected graph with V vertices and E edges is stored as an `int[V][V]` adjacency matrix, so to find the neighbours of `u` the BFS scans the whole row `mat[u]`. What is the tight bound on the total running time of the BFS?",
+      "options": [
+        "O(V + E)",
+        "O(E log V)",
+        "O(V^2)",
+        "O(E)"
+      ],
+      "answer": 2,
+      "why": "Each vertex is polled once, and each poll checks all V entries of its row, edge or not: V polls × V checks = O(V^2). The familiar O(V + E) bound needs an adjacency **list**, where scanning u's neighbours costs O(deg u) and all the degrees add up to 2E; O(E) forgets that the matrix scan also pays for every 0 in the row.\n\nFor a sparse graph (V = 10^5, E = 2 × 10^5) that is about 3 × 10^5 steps with a list versus 10^10 with a matrix, and the matrix alone would need 10^10 ints of memory. O(E log V) is Dijkstra with a binary heap, not BFS.\n\nTakeaway: complexity depends on the representation. Use an adjacency list unless the graph is dense or you need O(1) edge lookups (e.g. Floyd-Warshall)."
+    },
+    {
+      "q": "Count the islands in this grid. `1` is land, and two land cells belong to the same island only if they share a side (up, down, left or right).",
+      "code": "int[][] grid = {\n    {1, 1, 0, 0},\n    {0, 1, 0, 1},\n    {1, 0, 0, 1},\n    {0, 0, 1, 0}\n};",
+      "options": [
+        "4",
+        "2",
+        "3",
+        "7"
+      ],
+      "answer": 0,
+      "why": "Scan the cells row by row; every unvisited `1` starts a new island, and a flood fill (DFS or BFS) marks everything connected to it. The islands are {(0,0), (0,1), (1,1)}, {(1,3), (2,3)}, {(2,0)} and {(3,2)}, so the answer is 4.\n\nThe tempting 2 comes from also joining diagonal cells: (1,1) touches (2,0), and (2,3) touches (3,2), only at a corner. That counts with 8-directional connectivity but not with the 4 directions given here. 7 is the number of land cells, which is what you get by counting every `1` instead of every connected group.\n\nTakeaway: islands are connected components of the grid graph, and the direction array (4 or 8 entries) defines what \"connected\" means, so read that rule carefully."
+    },
+    {
+      "q": "A graph is bipartite if its vertices can be coloured with two colours so that every edge joins two different colours. Which of these undirected graphs is **not** bipartite?",
+      "options": [
+        "A cycle of 6 vertices: 0-1-2-3-4-5-0",
+        "A cycle of 5 vertices: 0-1-2-3-4-0",
+        "Any tree with 7 vertices",
+        "A 3 x 3 grid, each cell joined to the cells beside it"
+      ],
+      "answer": 1,
+      "why": "A graph is bipartite exactly when it has no cycle of odd length. Walking around the 5-cycle the colours must alternate A, B, A, B, A, and then the edge 4-0 joins two A's: the BFS colouring check hits `color[v] == color[u]` and returns false.\n\nThe 6-cycle is the tempting wrong pick: having a cycle is not the problem, having an **odd** one is, and an even cycle closes the alternation cleanly. A tree has no cycles at all (colour by depth parity), and a grid is a chessboard (colour by `(row + col) % 2`).\n\nTakeaway: bipartite = 2-colourable = no odd cycle. Check it with BFS or DFS colouring, starting a new colouring from every uncoloured vertex so every component is covered."
+    },
+    {
+      "q": "`prerequisites = [[1,0], [2,0], [3,1], [3,2], [4,3]]`, where `[a, b]` means course b must be taken before course a. Which order lets you take all 5 courses?",
+      "options": [
+        "0, 1, 3, 2, 4",
+        "4, 3, 2, 1, 0",
+        "0, 1, 2, 4, 3",
+        "0, 2, 1, 3, 4"
+      ],
+      "answer": 3,
+      "why": "Turn each pair into an edge from the prerequisite to the course: 0→1, 0→2, 1→3, 2→3, 3→4. A valid (topological) order puts the tail of every edge before its head. `0, 2, 1, 3, 4` does: 0 first, then 1 and 2 in either order, then 3 (it needs both), then 4.\n\n`0, 1, 3, 2, 4` takes 3 before its prerequisite 2, and `0, 1, 2, 4, 3` takes 4 before 3. `4, 3, 2, 1, 0` is what you get if you build the edges the wrong way round (a→b instead of b→a): every dependency comes out reversed.\n\nTakeaway: a topological order respects every directed edge, several valid orders can exist, and getting the edge direction right from the problem statement is half the work."
+    }
+  ],
+  "medium": [
+    {
+      "q": "Every minute, each rotten orange (2) rots the fresh oranges (1) directly above, below, left and right of it. What is the minimum number of minutes until no fresh orange is left (or -1 if that never happens)?",
+      "code": "int[][] grid = {\n    {2, 1, 0, 2},\n    {1, 1, 0, 1},\n    {0, 1, 1, 1}\n};   // 0 = empty, 1 = fresh, 2 = rotten",
+      "options": [
+        "6",
+        "-1",
+        "3",
+        "4"
+      ],
+      "answer": 2,
+      "why": "Put **both** rotten oranges in the queue at time 0 and run a single BFS where each level is one minute (multi-source BFS):\n\n- minute 1: (0,1), (1,0), (1,3)\n- minute 2: (1,1), (2,3)\n- minute 3: (2,1), (2,2)\n\nEvery fresh orange is rotten after 3 minutes. Spreading from only one of the rotten oranges gives 6, because the rot has to cross the whole grid instead of coming from both ends at once. 4 is the classic off-by-one where the loop also counts the last level, which rots nothing; the note's loop condition `!q.isEmpty() && fresh > 0` avoids it. It is not -1, since every fresh orange is connected to a rotten one.\n\nTakeaway: when many sources spread at the same time (rotting, fire, distance to the nearest 0 or 1), seed the queue with all of them and run one BFS: O(R × C)."
+    },
+    {
+      "q": "This BFS marks a node visited when it is **polled** instead of when it is enqueued. What goes wrong?",
+      "code": "Queue<Integer> q = new ArrayDeque<>();\nboolean[] vis = new boolean[n];\nq.offer(src);\nwhile (!q.isEmpty()) {\n    int u = q.poll();\n    vis[u] = true;                 // marked when polled\n    for (int v : adj.get(u))\n        if (!vis[v]) q.offer(v);\n}",
+      "options": [
+        "It loops forever as soon as the graph contains a single cycle",
+        "A node can be enqueued many times before it is polled, blowing up the work",
+        "It visits nodes in depth-first order instead of level by level from the source",
+        "Nodes reachable by two different paths are skipped and never get visited"
+      ],
+      "answer": 1,
+      "why": "Until `u` is polled, `vis[u]` stays false, so every neighbour polled before it enqueues it again, and each duplicate copy, when polled, scans its neighbours and enqueues *their* unvisited neighbours again. On a layered graph where each of 3 nodes in a layer is joined to all 3 nodes of the next layer, the queue receives 13 entries for 7 nodes, 121 for 13 nodes and 1093 for 19 nodes: it roughly triples per layer.\n\nIt does still terminate (once a node is polled it is never added again; on a triangle it makes just one extra entry), and the order is still level by level, so \"loops forever\" is the tempting wrong answer.\n\nFix: set `vis[v] = true` at the moment you `offer(v)` (or `if (vis[u]) continue;` right after polling). Takeaway: in BFS, mark when you enqueue, so each node enters the queue once and the total work is O(V + E)."
+    },
+    {
+      "q": "You get a grid of heights and may move up, down, left or right. The *effort* of a path is the largest absolute height difference between two consecutive cells on it. Which approach finds the minimum effort from the top-left to the bottom-right cell?",
+      "options": [
+        "Plain BFS from the top-left cell, since every move counts as one step",
+        "Grid DP moving only right and down, keeping the smallest path maximum",
+        "Topological sort of the cells by height, then relax edges in that order",
+        "Dijkstra where extending a path costs `max(d, |h[a] - h[b]|)`, not `d + w`"
+      ],
+      "answer": 3,
+      "why": "Dijkstra only needs a path's cost to never decrease when you extend it, and `max` has that property just like `+` does, so the cell with the smallest effort in the PQ is final when it is popped.\n\nPlain BFS minimises the number of moves, not the effort. The right/down DP is the tempting one, but the best path may need to go up or left: in `{1,100,1,1,1}`, `{1,100,1,100,1}`, `{1,1,1,100,1}` a route down, right, up and right again stays on 1s (effort 0), while every right/down-only path must step onto a 100 (effort 99). A topological order does not exist, because you can move both ways between neighbouring cells.\n\nTakeaway: Dijkstra works for any monotone path cost (sum, max, ...) with non-negative steps. Binary search on the answer + BFS, or union-find over edges sorted by difference, also solve this one."
+    },
+    {
+      "q": "There are n = 6 computers (0 to 5) and cables `[[0,1], [0,2], [1,2], [3,4]]`. In one move you may unplug any cable and plug it between any two computers. What is the minimum number of moves to connect all computers, or -1 if it is impossible?",
+      "options": [
+        "-1",
+        "2",
+        "1",
+        "3"
+      ],
+      "answer": 0,
+      "why": "Connecting n computers needs at least n - 1 = 5 cables and there are only 4, so the answer is -1 however you move them.\n\nUnion-find shows the same thing in more detail: the components are {0, 1, 2}, {3, 4} and {5}, so 3 - 1 = 2 joins are needed, but the only spare cable is the redundant one inside the triangle 0-1-2 (the edge whose `union` returns false). The tempting 2 is `components - 1` without first checking that there are enough cables; 1 is the number of spare cables.\n\nTakeaway: the answer is `components - 1` when `cables >= n - 1`, otherwise -1, and one DSU pass counts both the components and the redundant edges."
+    },
+    {
+      "q": "This Kruskal uses a visited array instead of a DSU to skip edges. On 4 nodes with undirected edges `0-1 (1)`, `2-3 (2)`, `1-2 (3)`, `0-3 (4)`, what happens?",
+      "code": "Arrays.sort(edges, (a, b) -> Integer.compare(a[2], b[2]));   // {u, v, w}\nboolean[] vis = new boolean[n];\nint total = 0;\nfor (int[] e : edges) {\n    if (vis[e[0]] && vis[e[1]]) continue;      // \"would close a cycle\"\n    vis[e[0]] = vis[e[1]] = true;\n    total += e[2];\n}",
+      "options": [
+        "It returns 6, the same MST that a DSU-based Kruskal finds",
+        "It returns 10, because it ends up adding every edge in order",
+        "It returns 3 and takes only 2 edges, leaving two separate trees",
+        "It returns 7, because it skips 1-2 but still takes 0-3"
+      ],
+      "answer": 2,
+      "why": "Trace: 0-1 is taken (0 and 1 marked), 2-3 is taken (2 and 3 marked), then 1-2 and 0-3 are both skipped because both of their ends are already marked. Total 3 with only 2 edges: a forest {0,1} + {2,3}, not a spanning tree.\n\n\"Both endpoints seen\" is not the same as \"both endpoints already connected\": 1 and 2 were in different trees, so 1-2 was safe and needed. A DSU asks exactly the right question, `find(1) != find(2)`, and the real MST is 0-1, 2-3, 1-2 with weight 6.\n\nTakeaway: Kruskal = sort the edges, take an edge only if its endpoints are in different DSU sets, stop at n - 1 edges. If you can't reach n - 1, the graph is disconnected."
+    }
+  ],
+  "hard": [
+    {
+      "q": "This Dijkstra finalises a node the first time it is polled. The directed graph has edges `0→1 (2)`, `0→2 (3)`, `2→1 (-2)`, `1→3 (1)`, and the source is 0. What is `dist` at the end?",
+      "code": "// dist = {0, INF, INF, INF}\nboolean[] done = new boolean[n];\npq.offer(new int[]{0, 0});                     // {dist, node}\nwhile (!pq.isEmpty()) {\n    int u = pq.poll()[1];\n    if (done[u]) continue;\n    done[u] = true;                            // finalised\n    for (int[] e : adj.get(u)) {               // e = {v, w}\n        int v = e[0], w = e[1];\n        if (!done[v] && dist[u] + w < dist[v]) {\n            dist[v] = dist[u] + w;\n            pq.offer(new int[]{dist[v], v});\n        }\n    }\n}",
+      "options": [
+        "[0, 1, 3, 2]",
+        "[0, 1, 3, 3]",
+        "It never finishes: the -2 edge keeps re-adding node 1",
+        "[0, 2, 3, 3]"
+      ],
+      "answer": 3,
+      "why": "Trace: poll 0 → dist[1] = 2, dist[2] = 3. Poll 1 (smallest, 2) and finalise it → dist[3] = 3. Poll 2: the edge 2→1 would give 3 - 2 = 1, but node 1 is already done, so it is ignored. Poll 3. Result `[0, 2, 3, 3]`, while the true distances are `[0, 1, 3, 2]` (0→2→1→3).\n\nDijkstra's greedy step assumes that once a node has the smallest tentative distance, no later path can beat it, because extending a path never makes it cheaper. A negative edge breaks exactly that assumption. `[0, 1, 3, 3]` would mean node 1 was improved but its outgoing edge never relaxed again. It always terminates: each node is expanded once.\n\nFix: Bellman-Ford (O(V·E), also detects negative cycles), or, since this graph is a DAG, relax edges in topological order in O(V + E). (The note's lazy version, which re-pushes any improved node, happens to fix this example, but with negative edges it can take exponential time, so it is not the answer.)"
+    },
+    {
+      "q": "This cycle check for a **directed** graph uses only a `visited` array, and is started from every node that is still unvisited. On which input does it return the wrong answer?",
+      "code": "boolean hasCycle(int u, List<List<Integer>> adj, boolean[] vis) {\n    vis[u] = true;\n    for (int v : adj.get(u)) {\n        if (vis[v]) return true;\n        if (hasCycle(v, adj, vis)) return true;\n    }\n    return false;\n}",
+      "options": [
+        "0→1, 1→2, 2→0",
+        "0→1, 1→2, 2→3",
+        "0→1, 0→2, 1→3, 2→3",
+        "0→0 (a self-loop)"
+      ],
+      "answer": 2,
+      "why": "In the diamond, the DFS goes 0 → 1 → 3, finishes 3, returns to 0 and goes 0 → 2, finds 3 already visited and reports a cycle. But 3 was reached on a *different branch*, not on the current path, so the graph is acyclic. The 3-cycle and the self-loop really are cycles (true is right), and the chain never meets a visited node (false is right).\n\nIn a directed graph a cycle means an edge back to a node that is **still on the current recursion path**. Use three states: 0 unvisited, 1 on the path, 2 finished, and report a cycle only on reaching a state-1 node. The plain-visited version also misfires across separate DFS starts (e.g. 0→1, then 2→1).\n\nTakeaway: undirected graphs use \"visited and not my parent\"; directed graphs need \"on the current path\" (or Kahn's processed count < n)."
+    },
+    {
+      "q": "Kahn's algorithm (queue the in-degree-0 nodes, and decrement in-degrees as you pop) runs on 6 nodes with directed edges `0→1, 1→2, 2→3, 3→1, 3→4, 0→5`. Which nodes end up in the output order?",
+      "options": [
+        "Only 0 and 5; nodes 1, 2, 3 and 4 never reach in-degree 0",
+        "0, 5 and 4; only the cycle nodes 1, 2 and 3 are left out",
+        "All six, because the queue eventually reaches every node",
+        "None, because Kahn's stops as soon as a cycle exists"
+      ],
+      "answer": 0,
+      "why": "Initial in-degrees: node 0 has 0, node 1 has 2 (from 0 and 3), nodes 2 to 5 have 1. Pop 0: node 1 drops to 1 (the edge 3→1 still counts), node 5 drops to 0 and is queued. Pop 5. The queue is empty and the output is `[0, 5]`.\n\nNodes 1, 2 and 3 wait on each other forever, and 4 waits on 3, so it is stuck too even though it is not on the cycle; that is why the second option is wrong. Kahn's doesn't stop early either: it processes everything the cycle doesn't block. Getting 2 < 6 nodes is how it reports \"cycle, no topological order\" (Course Schedule: false / empty array).\n\nTakeaway: Kahn's leaves out every node on a cycle *and* everything downstream of one. The same idea on the reversed graph finds the safe nodes in Find Eventual Safe States."
+    },
+    {
+      "q": "Undirected graph with edges `0-1, 1-2, 2-0, 1-3`, bridge DFS started at 0, visiting neighbours in increasing order. If the test `low[v] > tin[u]` is changed to `low[v] >= tin[u]`, which edges are reported as bridges?",
+      "code": "void dfs(int u, int parent) {\n    tin[u] = low[u] = ++timer;\n    for (int v : adj.get(u)) {\n        if (v == parent) continue;\n        if (tin[v] == 0) {                     // tree edge\n            dfs(v, u);\n            low[u] = Math.min(low[u], low[v]);\n            if (low[v] > tin[u]) bridges.add(u + \"-\" + v);\n        } else low[u] = Math.min(low[u], tin[v]);   // back edge\n    }\n}",
+      "options": [
+        "Only 1-3, the same as with the strict test",
+        "1-3 and 0-1, although 0-1 lies on the triangle",
+        "1-3, 0-1 and 1-2: every tree edge of the DFS",
+        "1-3 and 1-2, the two edges hanging below node 1"
+      ],
+      "answer": 1,
+      "why": "Trace: tin[0] = 1, tin[1] = 2, tin[2] = 3. At 2, the back edge to 0 gives low[2] = 1, so low[1] = 1; then 3 gets tin = low = 4. Checks with `>=`: edge 1-2: low[2] = 1 ≥ tin[1] = 2? no. Edge 1-3: 4 ≥ 2, yes (a real bridge). Edge 0-1: low[1] = 1 ≥ tin[0] = 1, yes, so 0-1 is wrongly reported.\n\n`low[v] == tin[u]` means v's subtree can climb back to u itself without using the edge u-v, so u-v lies on a cycle and removing it disconnects nothing. That equality case does matter when you remove the **vertex** u (v's subtree is cut off), which is why the articulation-point test uses `>=` and the bridge test uses strict `>`.\n\nTakeaway: bridge u-v ⇔ `low[v] > tin[u]`; non-root articulation point u ⇔ some child v has `low[v] >= tin[u]`; the root is one only if it has 2 or more DFS children."
+    },
+    {
+      "q": "Cheapest flight with at most k stops (at most k + 1 flights). With `flights = [[0,1,100], [1,2,100], [0,2,500]]`, src 0, dst 2 and k = 0, this code returns 200 but the answer is 500. What is the right fix?",
+      "code": "int[] dist = new int[n];\nArrays.fill(dist, INF);\ndist[src] = 0;\nfor (int round = 0; round <= k; round++)\n    for (int[] f : flights)                    // {from, to, price}\n        if (dist[f[0]] != INF && dist[f[0]] + f[2] < dist[f[1]])\n            dist[f[1]] = dist[f[0]] + f[2];\nreturn dist[dst] == INF ? -1 : dist[dst];",
+      "options": [
+        "Run n - 1 rounds instead of k + 1, exactly as normal Bellman-Ford does",
+        "Each round, read from a copy of last round's `dist` and write a new array",
+        "Use plain Dijkstra on price and return as soon as dst is polled",
+        "Sort the flights by price so cheaper flights are relaxed first each round"
+      ],
+      "answer": 1,
+      "why": "Round r should only extend paths that use r flights by one more flight, but updating `dist` in place lets one round chain several flights: in round 0, 0→1 sets dist[1] = 100 and the very next edge 1→2 already uses it, a 2-flight path when k = 0 allows one. Reading from `prev = dist.clone()` and writing into the new array limits round r to paths of at most r + 1 flights, and the result becomes 500. Running n - 1 rounds removes the limit altogether (still 200).\n\nPlain Dijkstra on price is the tempting option, but it settles a node through its cheapest path even if that path used too many flights. With `0→1 (1), 1→2 (1), 2→3 (1), 0→2 (5)`, dst 3 and k = 1, node 2 is settled at cost 2 using 2 flights, the 1-flight route 0→2 is discarded, and 3 looks unreachable, although 0→2→3 costs 6.\n\nTakeaway: when path length is limited, the length must be part of the state: k + 1 rounds of copy-based Bellman-Ford, or BFS / Dijkstra over (node, stops)."
+    }
+  ]
+}

@@ -1,0 +1,179 @@
+{
+  "easy": [
+    {
+      "q": "Starting from `[5, 3, 8, 1, 2]`, which array do you get after the first **two passes of selection sort** (ascending)?",
+      "options": [
+        "[3, 1, 2, 5, 8]",
+        "[3, 5, 8, 1, 2]",
+        "[1, 2, 8, 5, 3]",
+        "[1, 2, 5, 3, 8]"
+      ],
+      "answer": 2,
+      "why": "Pass i finds the minimum of a[i..n−1] and **swaps** it into position i. Pass 1: the minimum 1 (index 3) swaps with 5 → [1, 3, 8, 5, 2]. Pass 2: the minimum of [3, 8, 5, 2] is 2, swapped with 3 → [1, 2, 8, 5, 3].\n\n[3, 1, 2, 5, 8] is two passes of bubble sort (the two largest bubble to the end), and [3, 5, 8, 1, 2] is two steps of insertion sort (the first three elements sorted among themselves). [1, 2, 5, 3, 8] would need the other elements shifted right, which selection sort does not do.\n\n**Takeaway:** selection sort builds a prefix of final values, bubble sort a suffix of final values, insertion sort a sorted but not yet final prefix."
+    },
+    {
+      "q": "Recursive bubble sort with an early exit is called as `bubbleRec(a, n)` on an array that is **already sorted**. How many comparisons does it make?",
+      "code": "void bubbleRec(int[] a, int n) {\n    if (n <= 1) return;\n    boolean swapped = false;\n    for (int j = 0; j < n - 1; j++)\n        if (a[j] > a[j + 1]) { swap(a, j, j + 1); swapped = true; }\n    if (swapped) bubbleRec(a, n - 1);\n}",
+      "options": [
+        "n − 1: the first pass swaps nothing, so it never recurses",
+        "n(n − 1) / 2: every level still runs its full pass",
+        "2(n − 1): one pass to sort and a second pass to confirm",
+        "0: it notices the array is sorted before comparing anything"
+      ],
+      "answer": 0,
+      "why": "The first call compares each of a[0..n−2] with its right neighbour: n − 1 comparisons (9 for n = 10). None of them swaps, so `swapped` stays false and the recursive call is skipped: the O(n) best case.\n\nWithout the flag it would recurse on n − 1, n − 2, ... and always make n(n − 1)/2 comparisons. Recursing on n − 1 is valid because one pass always carries the largest of a[0..n−1] to index n − 1, its final spot.\n\n**Takeaway:** the swapped flag turns bubble sort's best case from O(n²) into O(n)."
+    },
+    {
+      "q": "What does it mean for a sorting algorithm to be **stable**?",
+      "options": [
+        "It runs in O(n log n) time for every possible input",
+        "It sorts in place, using only O(1) extra memory",
+        "Running it twice on the same input gives the same output",
+        "Elements with equal keys keep their original relative order"
+      ],
+      "answer": 3,
+      "why": "Stability is about ties: if two records compare equal, a stable sort leaves them in the order they had before sorting. Example: people already ordered by name, then stably sorted by age, stay alphabetical within each age.\n\nIt says nothing about speed or memory: insertion sort is stable but O(n²), merge sort is stable but needs O(n) extra space, and quick sort is in place but not stable. Any deterministic sort gives the same output twice.\n\n**Takeaway:** stability matters when you sort objects by one key and want an earlier ordering kept; Java's object sort (TimSort) is stable."
+    },
+    {
+      "q": "What are merge sort's **worst-case** time and extra space on an array of n elements?",
+      "options": [
+        "O(n log n) time and O(1) extra space",
+        "O(n log n) time and O(n) extra space",
+        "O(n²) time and O(log n) extra space",
+        "O(n log n) average but O(n²) worst, with O(n) space"
+      ],
+      "answer": 1,
+      "why": "Merge sort always splits exactly in half, so there are about log₂ n levels, and the merges on one level touch every element once: O(n) per level, O(n log n) in total, whatever the input looks like. Merging two sorted halves needs a temporary buffer of up to n elements, so the extra space is O(n), plus O(log n) for the stack.\n\nO(n²) worst case with O(log n) space describes quick sort, whose split depends on the pivot.\n\n**Takeaway:** merge sort is guaranteed O(n log n) and stable, paid for with O(n) extra memory."
+    },
+    {
+      "q": "Quick sort always picks the **last** element as its pivot. What happens when it is given an array that is already sorted?",
+      "options": [
+        "It notices nothing needs swapping and finishes in O(n)",
+        "The partitions stay balanced, so it takes O(n log n)",
+        "Every partition splits off only the pivot, so it takes O(n²)",
+        "It recurses forever, because the pivot never moves"
+      ],
+      "answer": 2,
+      "why": "On sorted input the last element is the maximum, so partitioning leaves all n − 1 other elements on the left and nothing on the right. The next call does the same with n − 1 elements, then n − 2, and so on: (n − 1) + (n − 2) + ... + 1 = O(n²) comparisons, with recursion n levels deep.\n\nIt does terminate, since each call removes the pivot from its range. A random pivot (or median of three) makes such bad splits extremely unlikely, giving O(n log n) expected time.\n\n**Takeaway:** quick sort's speed depends on balanced splits, so randomise the pivot."
+    }
+  ],
+  "medium": [
+    {
+      "q": "Merge sort is sorting student records by grade. In `merge`, where `i` walks the left half and `j` the right half, the tie test `a[i] <= a[j]` is changed to `a[i] < a[j]`. What changes?",
+      "options": [
+        "It no longer sorts correctly once two records share a grade",
+        "Still sorted, but equal grades may swap order: it is no longer stable",
+        "It loops forever on equal grades, since neither pointer advances",
+        "Nothing changes, since records with equal grades are interchangeable"
+      ],
+      "answer": 1,
+      "why": "On a tie, `<=` takes the left element first, and left-half records came earlier in the input, so equal records keep their order. That is exactly what makes merge sort stable.\n\nWith `<`, a tie takes the right element first. The output is still sorted by grade (equal keys end up adjacent either way), but a later record can move ahead of an earlier one with the same grade. A pointer still advances on every step, so nothing loops. And the records are not interchangeable: two students with grade 90 have different names, and an earlier sort by name would be lost.\n\n**Takeaway:** in merge, `<=` means stable."
+    },
+    {
+      "q": "To count inversions with merge sort, whenever the merge takes `a[j]` from the right half before `a[i]` from the left half, it adds `mid - i + 1`. How many inversions does merging left `[2, 5, 8]` with right `[1, 6]` count?",
+      "options": [
+        "4",
+        "2",
+        "3",
+        "5"
+      ],
+      "answer": 0,
+      "why": "Step by step: 2 vs 1 → take 1 from the right, and all 3 remaining left elements (2, 5, 8) are bigger, so add 3. 2 vs 6 → take 2. 5 vs 6 → take 5. 8 vs 6 → take 6, and only 8 remains on the left, so add 1. Total 4: (2,1), (5,1), (8,1), (8,6).\n\nAnswering 2 counts one per right element taken, missing that *every* remaining left element is bigger. That bulk count is valid because the left half is sorted: if a[i] > a[j], so is everything in a[i..mid].\n\n**Takeaway:** merge sort counts inversions in O(n log n) by counting the cross pairs in bulk during each merge."
+    },
+    {
+      "q": "To find the k-th largest element, quickselect partitions around a random pivot, then recurses into **only** the side that holds the answer. What is its average running time?",
+      "options": [
+        "O(n log n), since it partitions like quick sort over log n levels",
+        "O(log n), since it halves the search range like binary search",
+        "O(n²), since every partition scans the whole array again",
+        "O(n), since the work shrinks like n + n/2 + n/4 + …"
+      ],
+      "answer": 3,
+      "why": "Each partition costs time linear in the current range, and on average the pivot lands near the middle, so the range roughly halves. Because only one side is explored, the total is about n + n/2 + n/4 + ... ≤ 2n = O(n).\n\nQuick sort is O(n log n) because it recurses into *both* sides, so every level costs n. It cannot be O(log n): even the first partition looks at all n elements. An O(n²) worst case exists with consistently bad pivots, but random pivots make it vanishingly unlikely.\n\n**Takeaway:** k-th largest → quickselect in O(n) average, or a size-k min-heap in O(n log k)."
+    },
+    {
+      "q": "What does this print?",
+      "code": "Integer[] a = {Integer.MIN_VALUE, 1, 0};\nArrays.sort(a, (x, y) -> x - y);\nSystem.out.println(Arrays.toString(a));",
+      "options": [
+        "[-2147483648, 0, 1]",
+        "[1, 0, -2147483648]",
+        "[0, 1, -2147483648]",
+        "An IllegalArgumentException about the comparator contract"
+      ],
+      "answer": 2,
+      "why": "`x - y` overflows. Comparing 1 with MIN_VALUE gives 1 − (−2147483648) = 2147483649, which wraps to −2147483647, so the comparator claims 1 < MIN_VALUE. Likewise 0 − MIN_VALUE wraps to MIN_VALUE, which is negative, so 0 < MIN_VALUE. The sort trusts this and puts MIN_VALUE last.\n\nThere is no exception here: these three values happen to form a consistent (wrong) order, 0 < 1 < MIN_VALUE. TimSort only throws \"Comparison method violates its general contract\" when it detects an inconsistency, usually on larger inputs.\n\n**Takeaway:** write comparators as `Integer.compare(x, y)` or `Comparator.comparingInt(...)`, never `x - y`."
+    },
+    {
+      "q": "What does this insertion sort leave in `a = {3, 1, 2}`?",
+      "code": "for (int i = 1; i < a.length; i++) {\n    int key = a[i], j = i - 1;\n    while (j > 0 && a[j] > key) {\n        a[j + 1] = a[j];\n        j--;\n    }\n    a[j + 1] = key;\n}",
+      "options": [
+        "[3, 1, 2]",
+        "[1, 2, 3]",
+        "[1, 3, 2]",
+        "It throws ArrayIndexOutOfBoundsException"
+      ],
+      "answer": 0,
+      "why": "With `j > 0`, a[0] is never compared with the key. i = 1: key = 1, and j = 0 fails `j > 0` at once, so 1 is written back to index 1 → [3, 1, 2]. i = 2: key = 2, and a[1] = 1 is not > 2, so 2 stays → [3, 1, 2]. The array comes back unchanged, and no exception occurs because j never goes below 0.\n\nThe condition must be `j >= 0` so a key can slide all the way to index 0.\n\n**Takeaway:** test insertion sort with an input whose minimum is not first; that is the boundary this bug hides behind."
+    }
+  ],
+  "hard": [
+    {
+      "q": "Quick sort with **Hoare** partition (middle pivot; returns p such that a[lo..p] <= pivot <= a[p+1..hi]) recurses on `[lo, p - 1]` and `[p + 1, hi]`, copying the Lomuto pattern. What goes wrong?",
+      "code": "void quickSort(int[] a, int lo, int hi) {\n    if (lo >= hi) return;\n    int p = hoare(a, lo, hi);\n    quickSort(a, lo, p - 1);\n    quickSort(a, p + 1, hi);\n}\nint hoare(int[] a, int lo, int hi) {\n    int pivot = a[lo + (hi - lo) / 2], i = lo - 1, j = hi + 1;\n    while (true) {\n        do i++; while (a[i] < pivot);\n        do j--; while (a[j] > pivot);\n        if (i >= j) return j;\n        swap(a, i, j);\n    }\n}",
+      "options": [
+        "It recurses forever, because one side can stay the same size",
+        "Nothing: it sorts correctly and skips one needless element per call",
+        "It throws ArrayIndexOutOfBoundsException whenever p equals lo",
+        "a[p] may not be in its final place, so the array can stay unsorted"
+      ],
+      "answer": 3,
+      "why": "Lomuto returns the pivot's final index, so excluding p is right there. Hoare's p is only a **split point**: a[p] belongs to the left part but can be any value ≤ pivot, not necessarily the largest.\n\nTrace [3, 4, 0]: pivot 4, i stops at the 4 and j at the 0, swap → [3, 0, 4]; the pointers then cross and p = 1. The calls on [0, 0] and [2, 2] never touch the 0 at index 1, so the result is [3, 0, 4]. Ranges strictly shrink, so nothing loops, and a call like `quickSort(a, lo, lo - 1)` simply returns.\n\n**Takeaway:** with Hoare, recurse on `[lo, p]` and `[p + 1, hi]`; with Lomuto, on `[lo, p − 1]` and `[p + 1, hi]`."
+    },
+    {
+      "q": "Randomised quick sort with **Lomuto** partition (`if (a[j] < pivot) swap(a, i++, j);`) runs on an array of n **equal** values. What is its running time?",
+      "options": [
+        "O(n²), since nothing is < pivot, so each partition peels off one element",
+        "O(n log n), since the random pivot keeps the splits balanced on average",
+        "O(n), since every element already equals the pivot",
+        "O(n log n), since Lomuto sends half of the ties to each side"
+      ],
+      "answer": 0,
+      "why": "With all values equal, `a[j] < pivot` is never true, so i stays at lo and the pivot lands at index lo every time. The left part is empty and the right part has n − 1 elements, whichever random index was picked, because every choice is the same value. That is n(n − 1)/2 comparisons (exactly 499,500 for n = 1000) and n-deep recursion.\n\nRandomisation only helps when the values differ, and Lomuto puts every tie on one side. Hoare partition, or a 3-way partition (< pivot, == pivot, > pivot), handles duplicates well.\n\n**Takeaway:** test quick sort on all-equal input; Lomuto degrades to O(n²) there."
+    },
+    {
+      "q": "Selection sort (swap the minimum of `a[i..n-1]` into position i, using a strict `<` to find it) is **not** stable. Which reason is correct?",
+      "options": [
+        "On ties it picks the last minimum, so the later equal element moves first",
+        "It sorts in place, and an in-place sort can never be stable",
+        "Its long-distance swap can carry an element past an equal one",
+        "Its inner loop compares with `<=`, which reorders equal elements"
+      ],
+      "answer": 2,
+      "why": "Take [2a, 2b, 1]. Pass 0 finds the minimum 1 at index 2 and swaps it with index 0, which sends 2a to the back: [1, 2b, 2a]. Pass 1 finds nothing smaller than 2b, so the final order has 2b before 2a, reversing the original order of the equal pair.\n\nWith a strict `<`, the scan keeps the *first* minimum, so tie handling is not the cause. Being in place is not the cause either: insertion sort and bubble sort are in place and stable.\n\n**Takeaway:** stability is broken by swaps that jump over other elements; algorithms that only move elements past their neighbours (bubble, insertion) stay stable."
+    },
+    {
+      "q": "This merge sort allocates a new `tmp` array inside **every** merge. At the peak, how much `tmp` memory is alive at the same time for n elements (finished arrays can be garbage-collected)?",
+      "code": "void mergeSort(int[] a, int lo, int hi) {\n    if (lo >= hi) return;\n    int mid = lo + (hi - lo) / 2;\n    mergeSort(a, lo, mid);\n    mergeSort(a, mid + 1, hi);\n    int[] tmp = new int[hi - lo + 1];\n    // merge a[lo..mid] and a[mid+1..hi] into tmp, then copy back\n}",
+      "options": [
+        "O(n log n): log n levels each allocate arrays totalling n",
+        "O(n): each tmp lives only during its own merge, and the largest is n",
+        "O(log n): only the recursion stack counts as extra memory",
+        "O(n²): there are about n merges, each allocating up to n elements"
+      ],
+      "answer": 1,
+      "why": "A `tmp` is created only after both recursive calls have returned, and it becomes garbage as soon as that merge finishes. The callers still waiting on the stack have not allocated theirs yet, so at most one tmp is alive at any moment. The largest is the final merge with n elements; adding O(log n) stack frames gives O(n) peak.\n\nO(n log n) is the *total* allocated over the whole run (n per level × log n levels): it costs allocation and GC time, but it is never held at once. Merge sizes shrink with depth, so it is nowhere near O(n²).\n\n**Takeaway:** peak space counts what is alive simultaneously; one buffer allocated up front keeps O(n) and avoids the repeated allocations."
+    },
+    {
+      "q": "This one-pass sort of 0s, 1s and 2s (Dutch national flag) turns `[1, 2, 0]` into `[1, 0, 2]`. Which change fixes it?",
+      "code": "int lo = 0, mid = 0, hi = a.length - 1;\nwhile (mid <= hi) {\n    if (a[mid] == 0) swap(a, lo++, mid++);\n    else if (a[mid] == 1) mid++;\n    else swap(a, mid++, hi--);\n}",
+      "options": [
+        "Loop while `mid < hi` instead of `mid <= hi`",
+        "Don't advance `mid` after swapping with `lo`: that value is unchecked",
+        "Start `hi` at `a.length` instead of `a.length - 1`",
+        "Don't advance `mid` after swapping with `hi`: that value is unchecked"
+      ],
+      "answer": 3,
+      "why": "Invariant: a[0..lo−1] are 0s, a[lo..mid−1] are 1s, a[hi+1..] are 2s, and a[mid..hi] is unexplored. Swapping a 2 out to `hi` brings an unexplored value into a[mid], so mid must stay put and classify it next: `else swap(a, mid, hi--);`.\n\nIn the trace, mid = 1 sees the 2 and swaps it with index 2 → [1, 0, 2]; then mid++ makes mid > hi and the 0 is never inspected. Swapping with `lo` is different: a[lo] is already explored (a 1, or the same cell when lo == mid), so advancing mid there is safe. `mid < hi` fails on the same input, and `hi = a.length` indexes past the end.\n\n**Takeaway:** in a partition loop, only move past values you have actually classified."
+    }
+  ]
+}

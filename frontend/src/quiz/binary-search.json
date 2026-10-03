@@ -1,0 +1,177 @@
+{
+  "easy": [
+    {
+      "q": "Why do binary search templates write `mid = lo + (hi - lo) / 2` instead of `(lo + hi) / 2`?",
+      "options": [
+        "`(lo + hi) / 2` rounds up, so it can skip the element at `lo`",
+        "`lo + hi` can exceed `Integer.MAX_VALUE` and wrap to a negative `mid`",
+        "`lo + (hi - lo) / 2` needs fewer iterations to finish the search",
+        "`(lo + hi) / 2` is wrong whenever the array has an even length"
+      ],
+      "answer": 1,
+      "why": "Mathematically both give the same middle, but `lo + hi` is computed as an `int` first. When both are large, as in a search on the answer over a range like `[1, 2·10^9]`, the sum overflows: `lo = 1,500,000,000` and `hi = 2,000,000,000` give `(lo + hi) / 2 = -397483648`. That negative `mid` either throws on `a[mid]` or sends the search the wrong way.\n\n`hi - lo` never overflows for valid non-negative bounds, so `lo + (hi - lo) / 2` stays in range. For non-negative values both forms round down, take the same number of steps, and handle even lengths fine.\n\nTakeaway: always write `lo + (hi - lo) / 2` (or `(lo + hi) >>> 1`)."
+    },
+    {
+      "q": "For `a = [1, 2, 4, 4, 4, 7]` (0-indexed), what are `lowerBound(a, 4)` (first index with `a[i] >= 4`) and `upperBound(a, 4)` (first index with `a[i] > 4`)?",
+      "options": [
+        "2 and 5",
+        "2 and 4",
+        "3 and 5",
+        "2 and 6"
+      ],
+      "answer": 0,
+      "why": "The first element `>= 4` is at index 2, and the first element `> 4` is the 7 at index 5. Upper bound points one **past** the last 4, not at it; the last occurrence is `upperBound - 1 = 4`, which is where the tempting '2 and 4' comes from. 6 would be returned only if no element were greater than 4.\n\nThese two numbers answer a lot: count of 4s = `5 - 2 = 3`, first and last occurrence = 2 and 4, insert position = 2. Both take O(log n) with the 'record `ans`, keep searching left' template.\n\nTakeaway: lower bound = first `>= x`, upper bound = first `> x`; most sorted-array questions reduce to these two."
+    },
+    {
+      "q": "A classic `while (lo <= hi)` search for `target = 4` in `a = [1, 3, 5, 6]` ends without finding it. What are `lo` and `hi` when the loop exits?",
+      "code": "int lo = 0, hi = a.length - 1;\nwhile (lo <= hi) {\n    int mid = lo + (hi - lo) / 2;\n    if (a[mid] == target) return mid;\n    if (a[mid] < target) lo = mid + 1;\n    else hi = mid - 1;\n}",
+      "options": [
+        "`lo = 1`, `hi = 2`",
+        "`lo = 2`, `hi = 2`",
+        "`lo = 3`, `hi = 2`",
+        "`lo = 2`, `hi = 1`"
+      ],
+      "answer": 3,
+      "why": "Trace: `lo = 0, hi = 3, mid = 1` (3 < 4) → `lo = 2`; then `mid = 2` (5 > 4) → `hi = 1`. Now `lo > hi`, so the loop stops with `lo = 2, hi = 1`.\n\nIt can never stop with `lo == hi`, since that still satisfies `lo <= hi`; a failed search always ends with `hi = lo - 1`. At that point `lo` is the insertion position (the lower bound: first value `>= 4`, the 5 at index 2) and `hi` is the floor position (last value `< 4`, the 3 at index 1).\n\nTakeaway: when a `lo <= hi` search fails, `lo` is where the target would go, which is why Search Insert Position can simply return `lo`."
+    },
+    {
+      "q": "With `lowerBound(x)` = first index with `a[i] >= x` and `upperBound(x)` = first index with `a[i] > x` on a sorted array of length `n`, which expression gives the **floor** of `x` (the largest element `<= x`)?",
+      "options": [
+        "`a[lowerBound(x)]`, if that index is `< n`",
+        "`a[upperBound(x)]`, if that index is `< n`",
+        "`a[upperBound(x) - 1]`, if that index is `>= 0`",
+        "`a[lowerBound(x) - 1]`, if that index is `>= 0`"
+      ],
+      "answer": 2,
+      "why": "Everything before `upperBound(x)` is `<= x`, so the element right before it is the largest one `<= x`. With `a = [10, 20, 30]` and `x = 20`: `upperBound = 2`, so the floor is `a[1] = 20`.\n\nThe tempting `lowerBound(x) - 1` gives the largest element **strictly less** than `x`: here it returns `a[0] = 10`, which is wrong whenever `x` itself is present (it only coincides when `x` is absent). `a[lowerBound(x)]` is the ceil (smallest `>= x`), and `a[upperBound(x)]` is the smallest element strictly greater than `x`.\n\nTakeaway: ceil = `lowerBound(x)`, floor = `upperBound(x) - 1`, and check the index bounds for 'no floor' or 'no ceil'."
+    },
+    {
+      "q": "At most about how many loop iterations does classic binary search need on a sorted array of n = 1,000,000 elements?",
+      "options": [
+        "About 20",
+        "About 1,000",
+        "About 500,000",
+        "About 6"
+      ],
+      "answer": 0,
+      "why": "Each iteration halves the remaining range, so after k iterations about `n / 2^k` elements are left. The search ends when that reaches 1, so k ≈ log2(10^6) ≈ 19.9: at most 20 iterations (`floor(log2 n) + 1`; running it over every target confirms 20).\n\n'About 6' is log10(10^6): big-O ignores the base, but the actual step count doesn't. 1,000 is `sqrt(n)` (jump search) and 500,000 is the average for a linear scan.\n\nTakeaway: O(log n) means about 20 steps for a million and about 30 for a billion, which is why binary search is the go-to when n is huge or there are many queries."
+    }
+  ],
+  "medium": [
+    {
+      "q": "This rotated-array search uses a strict `a[lo] < a[mid]` to detect a sorted left half. What does it return for `a = [3, 1]` and `target = 1`?",
+      "code": "int lo = 0, hi = a.length - 1;\nwhile (lo <= hi) {\n    int mid = lo + (hi - lo) / 2;\n    if (a[mid] == target) return mid;\n    if (a[lo] < a[mid]) {                   // left half sorted\n        if (a[lo] <= target && target < a[mid]) hi = mid - 1;\n        else lo = mid + 1;\n    } else {                                // right half sorted\n        if (a[mid] < target && target <= a[hi]) lo = mid + 1;\n        else hi = mid - 1;\n    }\n}\nreturn -1;",
+      "options": [
+        "1, since `<` versus `<=` only matters when values repeat",
+        "It throws `ArrayIndexOutOfBoundsException` once `hi` is -1",
+        "-1, since it wrongly treats `[3, 1]` as the sorted half",
+        "It loops forever, since `lo` and `mid` both stay at 0"
+      ],
+      "answer": 2,
+      "why": "First iteration: `lo = 0, hi = 1, mid = 0`, and `a[0] = 3` isn't the target. Since `lo == mid`, the left half is just `[3]`, which is sorted, but `3 < 3` is false, so the code takes the else-branch and assumes `[mid..hi] = [3, 1]` is sorted. There `3 < 1` is false, so `hi = mid - 1 = -1` and the loop ends: it returns -1 although 1 is at index 1. No array access happens after `hi` becomes -1.\n\nWith `<=` the left half `[3]` is correctly treated as sorted; 1 is not in `[3, 3)`, so `lo = 1` and index 1 is found next. The case `lo == mid` comes up in every search on two elements, with or without duplicates.\n\nTakeaway: use `a[lo] <= a[mid]`; the `=` covers `lo == mid`."
+    },
+    {
+      "q": "Koko eats from one pile per hour at speed `k` bananas per hour and must finish all piles within `h` hours (`h >= piles.length`). For a binary search on `k`, which range `[lo, hi]` is correct and tight?",
+      "options": [
+        "`[0, max(piles)]`",
+        "`[min(piles), max(piles)]`",
+        "`[1, h]`",
+        "`[1, max(piles)]`"
+      ],
+      "answer": 3,
+      "why": "The hours for a pile are `ceil(p / k)`, so `k = 0` would divide by zero; the smallest meaningful speed is 1. At `k = max(piles)` every pile takes exactly one hour, so the total is `piles.length <= h`, always feasible, and a faster speed can't do better. So the answer always lies in `[1, max(piles)]`.\n\nStarting at `min(piles)` fails when `h` is large: piles `[3, 6]` with `h = 100` have answer 1, below the smallest pile. `h` is a number of hours, not a speed, so `[1, h]` can miss the answer completely (piles `[1000]` with `h = 1` need `k = 1000`).\n\nTakeaway: for search on the answer, `lo` = smallest value that could work, `hi` = a value that surely works."
+    },
+    {
+      "q": "This `while (lo < hi)` search for the **last** index with `a[i] <= x` moves `lo = mid`. What happens for `a = [1, 2]` and `x = 5`?",
+      "code": "int lo = 0, hi = a.length - 1;\nwhile (lo < hi) {\n    int mid = lo + (hi - lo) / 2;\n    if (a[mid] <= x) lo = mid;\n    else hi = mid - 1;\n}\nreturn lo;",
+      "options": [
+        "It loops forever: `mid` stays 0, so `lo = mid` never moves",
+        "It returns 1, the last index holding a value `<= 5`",
+        "It returns 0, because it stops at the first match",
+        "It throws, because `hi = mid - 1` goes below zero"
+      ],
+      "answer": 0,
+      "why": "With `lo = 0, hi = 1`, the lower middle is `0 + (1 - 0) / 2 = 0`. `a[0] = 1 <= 5`, so `lo = mid = 0`: nothing changes, and the same iteration repeats forever. Whenever two elements remain, the lower middle equals `lo`, so a `lo = mid` move makes no progress.\n\nThe fix is the **upper** middle `lo + (hi - lo + 1) / 2`: then `mid = 1`, `lo = 1`, the loop ends, and it returns 1. The `else` branch never runs here, so nothing goes below zero.\n\nTakeaway: in `while (lo < hi)` searches pair `hi = mid` with the lower middle and `lo = mid` with the upper middle, or use the `lo <= hi` template with an `ans` variable."
+    },
+    {
+      "q": "`a = [1, 1, 2, 3, 3, 4, 4, 8, 8]` (0-indexed) is sorted and every value appears twice except one. At `mid = 4` you see `a[4] = 3` and `a[5] = 4`. What should the search conclude?",
+      "options": [
+        "The single is right of 4: `a[4]` pairs with `a[3]`, so the left side is fine",
+        "The single is at index 4 or before: the pair that should start at 4 is broken",
+        "The single is `a[4]` itself, because `a[4]` differs from `a[5]`",
+        "Nothing yet: parity only helps when `mid` is odd, so shift `mid` by one"
+      ],
+      "answer": 1,
+      "why": "Before the single element every pair starts at an even index (`(0,1), (2,3), ...`); after it, every pair starts at an odd index. At even `mid = 4`, `a[4] != a[5]`, so the pairing has already shifted and the single is at or before index 4 (`hi = mid`). It is in fact at index 2 (the value 2).\n\n`a[4]` itself isn't the single, because it matches `a[3]`; looking only at the right neighbour is the trap. And `a[3]` pairing with `a[4]` (a pair starting at an odd index) is exactly the evidence that the single lies to the left.\n\nTakeaway: make `mid` even; if `a[mid] == a[mid + 1]` go right (`lo = mid + 2`), else go left (`hi = mid`), O(log n)."
+    },
+    {
+      "q": "A matrix has every row sorted left to right and every column sorted top to bottom, but a row may start below where the previous row ended. The staircase search starts at the **top-right** corner. Why there?",
+      "options": [
+        "It holds the median value, so each comparison discards half of the cells",
+        "Top-left works the same way; top-right is only a convention",
+        "Moving left decreases and moving down increases, so a comparison drops a column or a row",
+        "It lets you treat the matrix as one sorted array of m · n elements"
+      ],
+      "answer": 2,
+      "why": "At the top-right cell, everything left of it in its row is smaller and everything below it in its column is larger. If it's bigger than the target, the whole column below is bigger still, so drop the column (`c--`); if smaller, the rest of the row is smaller still, so drop the row (`r++`). Each step removes a row or a column: O(m + n).\n\nAt top-left both moves increase the value, so one comparison can't tell you which way to go. Treating the matrix as one sorted 1D array only works when each row starts after the previous one ends (the fully sorted case, O(log(m · n))). The corner value isn't a median, and a step removes one row or column, not half the cells.\n\nTakeaway: for row-and-column sorted matrices, staircase from top-right (or bottom-left)."
+    }
+  ],
+  "hard": [
+    {
+      "q": "Search in a rotated sorted array **with duplicates** adds `if (a[lo] == a[mid] && a[mid] == a[hi]) { lo++; hi--; continue; }`. Why is its worst case O(n) instead of O(log n)?",
+      "options": [
+        "With duplicates every copy of the target has to be visited",
+        "Duplicates break the sortedness, so the array must be sorted again first",
+        "The extra comparison runs every iteration and doubles the work per step",
+        "When `a[lo] == a[mid] == a[hi]` you can't tell which half is sorted, so it shrinks by one"
+      ],
+      "answer": 3,
+      "why": "The normal step decides which half is sorted by comparing `a[lo]` with `a[mid]`. Compare `[1, 0, 1, 1, 1]` and `[1, 1, 1, 0, 1]`: in both `a[lo] = a[mid] = a[hi] = 1`, but the dip is left of `mid` in one and right of it in the other. No comparison of those three values can tell them apart, so the only safe move is to drop one element from each end.\n\nAn input like `[1, 1, ..., 1, 2, 1, ..., 1]` searching for 2 hits this case at nearly every step, giving O(n). The search still needs just one occurrence, and a constant number of extra comparisons per step would keep O(log n).\n\nTakeaway: duplicates can hide which half is sorted; expect O(log n) on average but O(n) in the worst case."
+    },
+    {
+      "q": "Find Peak Element (out-of-range neighbours count as `-∞`, adjacent values differ) uses `if (a[mid] < a[mid + 1]) lo = mid + 1; else hi = mid;`. Why is it safe to discard the left side when `a[mid] < a[mid + 1]`?",
+      "options": [
+        "An uphill step means the right side is sorted ascending, so its last element is a peak",
+        "Walking right from `mid + 1`, values rise to the end (a peak) or drop, and the top before the drop is a peak",
+        "An uphill step means the global maximum must lie to the right of `mid`",
+        "Once `a[mid] < a[mid + 1]`, the left side cannot contain any peak"
+      ],
+      "answer": 1,
+      "why": "Start at `mid + 1` and walk right while values keep increasing. Either you reach the last index, which is a peak because its right neighbour is `-∞`, or you hit a first drop, and the element just before it is bigger than both neighbours. Either way a peak exists in `[mid + 1, hi]`, and the problem only asks for **some** peak.\n\nTake `[9, 1, 2, 5, 3]`: at `mid = 2`, `2 < 5`, so the search goes right and returns index 3 (value 5). The right side `[5, 3]` isn't sorted, the global maximum 9 is on the left, and index 0 is a peak too, so the other three claims all fail.\n\nTakeaway: binary search doesn't need sorted data, only a proof that an answer survives in the half you keep."
+    },
+    {
+      "q": "Capacity to Ship Packages: someone starts the search at `lo = 1` instead of `lo = max(w)`, keeping this greedy check and `hi = sum(w)`. The search returns the smallest `cap` with `groupsNeeded(w, cap) <= days`. What does it return for `w = [1, 10]`, `days = 2`?",
+      "code": "int groupsNeeded(int[] w, int cap) {\n    int groups = 1, load = 0;\n    for (int x : w) {\n        if (load + x > cap) { groups++; load = 0; }\n        load += x;\n    }\n    return groups;\n}",
+      "options": [
+        "1, since every capacity tested looks feasible",
+        "10, since a wider range never changes the answer",
+        "11, since every capacity below the sum looks infeasible",
+        "6, since the search stops at the first `mid` that works"
+      ],
+      "answer": 0,
+      "why": "The greedy assumes no single package is heavier than `cap`. With `cap = 1`: the 1 fits; the 10 doesn't, so a new day starts with `load = 10`, already over the cap, but nothing checks that. It reports 2 days, so `cap = 1` looks feasible. The search tries `mid = 6, 3, 1`, all 'feasible', and returns 1, while the real answer is 10 because the 10-unit package can't be split.\n\nWith `lo = max(w)` every tested cap can hold any single package, so the greedy count is correct and monotonic. 6 is only the first `mid`; after a success the template keeps searching left.\n\nTakeaway: the answer range is part of correctness, not just speed: `lo = max(w)` is what makes `groupsNeeded` valid."
+    },
+    {
+      "q": "Median of two sorted arrays by partition: binary search on `i` elements taken from the smaller array `A`, with `j = (m + n + 1) / 2 - i` from `B`. For `A = [1, 3, 8]` and `B = [7, 9, 10, 11]`, at `i = 2, j = 2` you get `l1 = 3, r1 = 8, l2 = 9, r2 = 10`. What is the next step?",
+      "options": [
+        "Both sides are valid, so the median is `max(l1, l2) = 9`",
+        "`l2 > r1`, so take fewer from `A`: `hi = i - 1`",
+        "`l2 > r1`, so take more from `A`: `lo = i + 1`",
+        "`l1 > r2`, so take fewer from `A`: `hi = i - 1`"
+      ],
+      "answer": 2,
+      "why": "A partition is valid when everything on the left is `<=` everything on the right: `l1 <= r2` and `l2 <= r1`. Here `l1 = 3 <= 10` holds but `l2 = 9 > r1 = 8` fails: `B` put 9 on the left while `A` left the smaller 8 on the right. Fix it by taking more from `A` (and so fewer from `B`): `lo = i + 1`.\n\nAt `i = 3, j = 1`: `l1 = 8, r1 = +∞, l2 = 7, r2 = 9`; both conditions hold, and the median of the 7 elements is `max(8, 7) = 8` (merged: 1 3 7 **8** 9 10 11). Stopping at `i = 2` would give 9, which is wrong, and `l1 > r2` isn't the failing condition here.\n\nTakeaway: `l1 > r2` → move A's cut left; `l2 > r1` → move it right. Searching the smaller array gives O(log min(m, n))."
+    },
+    {
+      "q": "Aggressive Cows: maximise the minimum distance between `c` cows placed in sorted stalls. `canPlace(dist)` puts the first cow in the **first** stall, then each next cow in the first stall at least `dist` past the previous cow. Why is this greedy check correct?",
+      "options": [
+        "Placing cows as close together as allowed always maximises the minimum distance",
+        "Stalls are sorted, so every placement order fits the same number of cows",
+        "It tries every stall for the first cow and keeps the best result",
+        "Greedy's k-th cow is never later than the k-th cow of any valid placement, so it fits at least as many"
+      ],
+      "answer": 3,
+      "why": "Compare the greedy with any valid placement for `dist`, cow by cow. Greedy's first cow is at the leftmost stall, so it's no later. If greedy's k-th cow is no later than the other's k-th cow, the other's (k+1)-th cow is at least `dist` past its own k-th, hence at least `dist` past greedy's k-th, so greedy can place its (k+1)-th cow there or earlier. So greedy never runs out of room first: if any placement fits `c` cows, greedy does too.\n\nThat makes `canPlace` exact, and it's monotonic (true for small `dist`, false for large), so binary search finds the largest feasible `dist`, moving `lo = mid + 1` on success. The greedy only answers yes/no for a fixed `dist`; the binary search does the maximising, and greedy never tries other first stalls.\n\nTakeaway: search on the answer needs a correct, monotonic O(n) check, and 'place as early as possible' is the usual greedy behind it."
+    }
+  ]
+}

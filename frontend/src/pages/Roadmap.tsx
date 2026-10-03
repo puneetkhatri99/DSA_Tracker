@@ -2,6 +2,7 @@ import { ArrowRightIcon, BellRingingIcon, BookOpenTextIcon, CaretRightIcon, Chec
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router';
 import { useDueCount } from '../components/Header';
+import { Loader } from '../components/Loader';
 import { Chip, QuestionRow, focusEl } from '../components/QuestionRow';
 import { DIFF, NO_FILTERS, essential, filtering, nextUp, pct, topicStats, visible, type Diff, type Filters, type Question, type Roadmap, type TopicStat } from '../lib';
 import { useStore } from '../store';
@@ -18,6 +19,7 @@ export function Review() {
 
 function TopicMap({ rm, stats }: { rm: Roadmap; stats: Record<string, TopicStat> }) {
   const host = useRef<HTMLDivElement>(null);
+  const [drawn, setDrawn] = useState(false);
   useEffect(() => {
     const n = (id: string) => id.replace(/-/g, '_');
     const lines = ['flowchart LR'];
@@ -32,9 +34,10 @@ function TopicMap({ rm, stats }: { rm: Roadmap; stats: Record<string, TopicStat>
     import('mermaid')
       .then(({ default: m }) => { m.initialize({ startOnLoad: false, theme: matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default' }); return m.render('topic-map-' + Date.now(), lines.join('\n')); })
       .then(({ svg }) => { if (host.current) host.current.innerHTML = svg; })
-      .catch(e => console.warn('topic map', e));
+      .catch(e => { console.warn('topic map', e); if (host.current) host.current.textContent = 'Could not draw the topic map.'; })
+      .finally(() => setDrawn(true));
   }, [rm, stats]);
-  return <div className="map-host" ref={host} />;
+  return <>{!drawn && <Loader label="Drawing the topic map…" />}<div className="map-host" ref={host} hidden={!drawn} /></>;
 }
 
 export default function RoadmapPage() {
@@ -56,7 +59,9 @@ export default function RoadmapPage() {
   const goNext = () => {
     const q = nextUp(rm, progress, filters);
     if (!q) return showStatus('Nothing left here. Nice!');
-    setOpenTopic(store.byId[q.id].t.id, true);
+    const { t } = store.byId[q.id];
+    setOpenTopic(t.id, true);
+    if (q.group) setOpenTopic(`${t.id}/${q.group}`, true);
     setFlash(q.id + ':' + Date.now());
   };
   useEffect(() => { if (flash) focusEl(document.querySelector(`.q[data-id="${flash.split(':')[0]}"]`)); }, [flash]);
@@ -96,10 +101,18 @@ export default function RoadmapPage() {
           <span className="topic-progress"><span className="count">{s.done}/{s.total}</span><span className="bar small"><i style={{ width: pct(s.done, s.total) + '%' }} /></span></span>
           {t.note && <Link className="note-link" to={`/notes/${t.note}`} title="Pattern notes"><BookOpenTextIcon /><span>Notes</span></Link>}
         </summary>
-        {open && groups.map(([g, list], gi) => <Fragment key={gi}>
-          {g && <h4>{g}</h4>}
-          {list.map(q => <QuestionRow key={q.id} q={q} stats={stats} />)}
-        </Fragment>)}
+        {open && groups.map(([g, list], gi) => {
+          const rows = list.map(q => <QuestionRow key={q.id} q={q} stats={stats} />);
+          if (!g || new Set(t.questions.map(q => q.group)).size < 2) return <Fragment key={gi}>{g && <h4>{g}</h4>}{rows}</Fragment>;
+          // Sub-sections fold too. They stay open while a filter is on, so matches are never hidden.
+          const key = `${t.id}/${g}`, all = t.questions.filter(q => q.group === g);
+          return (
+            <details key={gi} className="group" open={openTopics.has(key) || filtering(filters)} onToggle={e => setOpenTopic(key, e.currentTarget.open)}>
+              <summary><CaretRightIcon className="ph caret" /><span>{g}</span><span className="count">{all.filter(q => st(q.id).done).length}/{all.length}</span></summary>
+              {rows}
+            </details>
+          );
+        })}
       </details>
     );
   }).filter(Boolean);

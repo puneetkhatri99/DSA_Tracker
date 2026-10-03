@@ -1,0 +1,147 @@
+{
+  "easy": [
+    {
+      "q": "A trie contains only the word `\"apple\"`. What do `search(\"app\")` and `startsWith(\"app\")` return?",
+      "options": [
+        "true and true",
+        "false and false",
+        "true and false",
+        "false and true"
+      ],
+      "answer": 3,
+      "why": "Both calls walk `a → p → p` and find the node, because `\"app\"` lies on the path to `\"apple\"`. `startsWith` only needs the node to exist, so it returns **true**. `search` asks whether a whole word ends there, and that second `p` node has `end == false` because only `\"apple\"` was inserted, so it returns **false**.\n\nForgetting the `end` check makes `search` behave like `startsWith`, which is the most common trie bug.\n\nTakeaway: the path proves a prefix exists; the `end` flag proves a word exists."
+    },
+    {
+      "q": "A trie with `Node[26]` children stores N words. What is the time to search for a word of length L?",
+      "options": [
+        "O(L), no matter how many words are stored in it",
+        "O(L · log N), like a balanced BST of strings",
+        "O(N · L), comparing against every stored word",
+        "O(N), since each stored word adds a branch to check"
+      ],
+      "answer": 0,
+      "why": "Search follows one child pointer per character, and with a `Node[26]` array each step is a direct O(1) index, so the cost is **O(L)** no matter how many words share the trie.\n\nA balanced BST such as `TreeSet<String>` needs O(log N) comparisons, each up to O(L), and a plain list compares against every word. The trie avoids both because shared prefixes are stored once and the path is chosen character by character. The price is memory: up to 26 child references per node.\n\nTakeaway: a trie trades memory for prefix operations whose cost depends only on the length of the query."
+    },
+    {
+      "q": "You insert `\"tea\"`, `\"ten\"`, `\"to\"`, `\"inn\"` and `\"in\"` into an empty trie. How many nodes are created, not counting the root?",
+      "options": ["13", "8", "9", "7"],
+      "answer": 1,
+      "why": "Shared prefixes share nodes. Under `t`: \"tea\" creates `t`, `e`, `a`; \"ten\" reuses `t`, `e` and adds `n`; \"to\" reuses `t` and adds `o`: 5 nodes. Under `i`: \"inn\" creates `i`, `n`, `n`; \"in\" reuses `i`, `n` and only sets `end` on that node: 3 nodes. Total **8**.\n\n13 is the total number of characters (3 + 3 + 2 + 3 + 2), the count you would get with no sharing at all; 9 includes the root.\n\nTakeaway: a trie has one node per distinct non-empty prefix, so its size is at most the total length of the words and often much less."
+    },
+    {
+      "q": "The array-based trie computes `int i = ch - 'a';` with `Node[] next = new Node[26]`. What happens on `insert(\"Apple\")`?",
+      "options": [
+        "It works: 'A' and 'a' share a slot, since chars compare ignoring case",
+        "It works: the negative index wraps around to slot (−32 mod 26)",
+        "It throws ArrayIndexOutOfBoundsException, because 'A' − 'a' is −32",
+        "It throws NullPointerException, because next[0] was never created"
+      ],
+      "answer": 2,
+      "why": "`char` arithmetic uses character codes: `'A'` is 65 and `'a'` is 97, so `'A' - 'a'` is -32, and `next[-32]` throws `ArrayIndexOutOfBoundsException`. Java arrays never wrap negative indices, and characters are compared by code, never case-insensitively.\n\nA missing child is not the problem: `insert` creates `next[i]` when it is null. Fixes: lower-case the input, use `new Node[128]` indexed by the char itself, or a `Map<Character, Node>` for arbitrary characters.\n\nTakeaway: `ch - 'a'` is only safe when the input is guaranteed to be lowercase `a`-`z`."
+    },
+    {
+      "q": "Which of these problems is a natural fit for a trie?",
+      "options": [
+        "Autocomplete: list the stored words that begin with a typed prefix",
+        "Find the k most frequent words in a very large list of words",
+        "Check whether two given strings are anagrams of each other",
+        "Find the longest palindromic substring of a single string"
+      ],
+      "answer": 0,
+      "why": "A trie groups words by prefix: walk to the node for the typed prefix in O(prefix length), and every word below that node is a completion, collected with a DFS.\n\nTop-k frequent words is a counting problem (HashMap + heap), anagrams need character counts (`int[26]`), and the longest palindromic substring is expand-around-centre or Manacher. None of them asks about prefixes shared across many strings.\n\nTakeaway: reach for a trie when many strings are queried by prefix, or when you scan text and need to know \"is what I have so far the start of some word?\"."
+    }
+  ],
+  "medium": [
+    {
+      "q": "Using the TrieII from your notes (each node keeps `prefixCount` and `endCount`), what does this print?",
+      "code": "TrieII t = new TrieII();\nt.insert(\"apple\");\nt.insert(\"apple\");\nt.insert(\"app\");\nSystem.out.print(t.countWordsEqualTo(\"apple\") + \" \");\nSystem.out.print(t.countWordsStartingWith(\"app\") + \" \");\nt.erase(\"apple\");\nSystem.out.print(t.countWordsStartingWith(\"app\"));",
+      "options": ["1 3 2", "2 2 1", "2 3 3", "2 3 2"],
+      "answer": 3,
+      "why": "Duplicates are counted, not ignored: after inserting \"apple\" twice, the `e` node has `endCount = 2`, so the first number is 2. `countWordsStartingWith(\"app\")` reads `prefixCount` at the second `p`, which every insert passed through: 2 (\"apple\" twice) + 1 (\"app\") = 3. `erase(\"apple\")` decrements `prefixCount` along a, p, p, l, e and `endCount` at e, so the second `p` drops to 2. Output: **2 3 2**.\n\n\"1 3 2\" treats the trie like a set, and \"2 2 1\" forgets that \"app\" is itself a word starting with \"app\".\n\nTakeaway: `prefixCount` counts words passing through a node, `endCount` counts words ending at it, and both count duplicates."
+    },
+    {
+      "q": "This finds the longest common prefix of all inserted words by walking down while the current node has exactly one child. After inserting `\"ab\"` and `\"abc\"`, what does it return?",
+      "code": "String lcp(Trie t) {\n    StringBuilder sb = new StringBuilder();\n    Trie.Node cur = t.root;\n    while (true) {\n        int only = -1, kids = 0;\n        for (int c = 0; c < 26; c++)\n            if (cur.next[c] != null) { kids++; only = c; }\n        if (kids != 1) break;\n        sb.append((char) ('a' + only));\n        cur = cur.next[only];\n    }\n    return sb.toString();\n}",
+      "options": ["\"ab\"", "\"abc\"", "\"a\"", "\"\""],
+      "answer": 1,
+      "why": "From the root the walk sees one child `a`, then one child `b`, then one child `c` (the only child of the `b` node), so it returns **\"abc\"**. But `\"ab\"` is itself a word, and the LCP of `\"ab\"` and `\"abc\"` is `\"ab\"`: the walk must also stop at a node that ends a word.\n\nThe fix is `if (kids != 1 || cur.end) break;`. For `{\"flower\", \"flow\", \"flight\"}` both versions return \"fl\", because the branch at `l` comes before any word ends, which is why this bug survives simple tests.\n\nTakeaway: a word can end at an internal node, so any walk meaning \"all words agree so far\" must check the `end` flag as well as the branching."
+    },
+    {
+      "q": "Find the longest word such that **every** prefix of it is also in the list (ties: lexicographically smallest). What is the answer for `[\"a\", \"ap\", \"app\", \"appl\", \"apple\", \"apply\", \"banana\"]`?",
+      "options": ["\"apple\"", "\"apply\"", "\"banana\"", "\"appl\""],
+      "answer": 0,
+      "why": "Insert all words, then for each word walk its path and require `end == true` at every node. `\"apple\"` and `\"apply\"` both pass (a, ap, app and appl are all words) and both have length 5, so the tie-break picks the lexicographically smaller **\"apple\"** (`e < y`).\n\n`\"banana\"` is the longest word but fails at the first step, since `\"b\"` is not in the list. `\"apply\"` is the tie-break applied the wrong way round, and `\"appl\"` is valid but shorter.\n\nTakeaway: \"every prefix is a word\" means checking `end` on every node of the path, O(total length) with a trie."
+    },
+    {
+      "q": "The notes count distinct substrings by inserting every suffix into a trie, counting newly created nodes, then adding 1 for the empty string. What does this return for `\"abab\"`?",
+      "options": ["11", "7", "8", "10"],
+      "answer": 2,
+      "why": "Every substring is a prefix of some suffix, so the trie of all suffixes has exactly one node per distinct non-empty substring. Inserting `\"abab\"` creates 4 nodes (a, ab, aba, abab), `\"bab\"` creates 3 (b, ba, bab), and `\"ab\"` and `\"b\"` create none because those paths already exist. That is 7 distinct non-empty substrings, plus 1 for the empty string: **8**.\n\n10 is the number of non-empty substrings with duplicates, `n(n + 1)/2` (\"a\", \"b\" and \"ab\" each occur twice), and 11 adds the empty string to that.\n\nTakeaway: a new trie node means a substring never seen before, so counting nodes counts distinct substrings in O(n²)."
+    },
+    {
+      "q": "For maximum XOR, the bit trie walks from bit 30 down and takes the child with the **opposite** bit whenever it exists. Why is this greedy choice always optimal?",
+      "options": [
+        "The trie keeps numbers in sorted order, so the greedy path ends at the largest number",
+        "XOR is commutative, so the order in which the bits are decided does not matter",
+        "It is not always optimal; the code would need to backtrack if a lower bit is missing",
+        "A 1 at bit b is worth 2^b, which is more than all lower bits together (2^b − 1)"
+      ],
+      "answer": 3,
+      "why": "Compare two results from the top bit down: the first bit where they differ decides which is larger, because `2^b > 2^(b-1) + ... + 2 + 1 = 2^b - 1`. So a 1 at the highest possible bit beats anything the lower bits could add, and taking the opposite child (which makes that XOR bit 1) is never a mistake when it exists.\n\nIf it does not exist, the same-bit child must (every number has all 31 bits, so each node above the leaves has a child), so there is never a reason to backtrack. The greedy path does not end at the largest number, but at the best partner for `x`.\n\nTakeaway: to maximise a binary number, decide bits from most significant to least, greedily."
+    }
+  ],
+  "hard": [
+    {
+      "q": "Queries `(x, m)` ask for the max of `x ^ nums[j]` over `nums[j] <= m`. The solution sorts `nums` and the queries by m, inserting numbers into the bit trie as m grows. Why sort the queries?",
+      "options": [
+        "The output must list answers in increasing order of m, so sorting builds it directly",
+        "Each number is inserted once, and each query sees exactly the numbers ≤ its m",
+        "Sorting by m lets each query reuse the previous query's greedy path from the root",
+        "The bit trie only works correctly when values are inserted in increasing order"
+      ],
+      "answer": 1,
+      "why": "A plain trie cannot answer \"only among numbers ≤ m\", and rebuilding it per query costs O(31 · n) each. Processing queries by increasing m means the allowed set only grows: before answering, insert every `nums[j] <= m` not inserted yet. Each number is inserted once overall, for O(n log n + q log q + 31 · (n + q)) in total.\n\nAnswers must still be written to the original query index (`ans[qi]`), since the output follows the input order, and the trie works for any insertion order. A query with no allowed number gets -1 instead of walking an empty trie.\n\nTakeaway: when queries carry a monotonic limit, sort them offline so a structure that only supports insertions can serve them all."
+    },
+    {
+      "q": "A TrieII holds only `\"apple\"`. By mistake `erase(\"ap\")` is called, although \"ap\" was never inserted. What do `countWordsEqualTo(\"ap\")` and `countWordsStartingWith(\"ap\")` return afterwards?",
+      "code": "public void erase(String w) {        // assumes w was inserted\n    Node cur = root;\n    for (char ch : w.toCharArray()) {\n        cur = cur.next[ch - 'a'];\n        cur.prefixCount--;\n    }\n    cur.endCount--;\n}",
+      "options": ["-1 and 0", "0 and 1", "0 and 0", "-1 and 1"],
+      "answer": 0,
+      "why": "The path for `\"ap\"` exists (it is a prefix of \"apple\"), so nothing crashes. `prefixCount` drops from 1 to 0 at `a` and at `p`, and `endCount` at `p` drops from 0 to **-1**. So `countWordsEqualTo(\"ap\")` is -1 and `countWordsStartingWith(\"ap\")` is **0**, even though \"apple\" still starts with \"ap\" and `countWordsEqualTo(\"apple\")` still says 1: the counts now contradict each other.\n\n\"0 and 1\" is what a correct trie would report; it needs a guard such as `if (countWordsEqualTo(w) == 0) return;` before erasing.\n\nTakeaway: count-based tries stay consistent only if erase is limited to words that are really present."
+    },
+    {
+      "q": "In \"Add and Search Word\", `.` matches any letter, so search must branch into every child on a `.`. What is the worst-case time of searching for a pattern of L dots that matches no word?",
+      "options": [
+        "O(L), the same as a normal search, since one level is visited per character",
+        "O(26 · L), because each `.` checks the 26 children of one node",
+        "Up to every node at depth ≤ L, i.e. O(min(trie size, 26^L))",
+        "O(L · log N), because dots are resolved by binary search over children"
+      ],
+      "answer": 2,
+      "why": "On a `.` the search tries *every* existing child and recurses into each, so it explores a subtree rather than a single path. If no word of length L exists, nothing returns early and every node at depth ≤ L is visited, which is bounded both by the trie size and by 26^L.\n\nO(26 · L) is the tempting mistake: it assumes each level checks the 26 children of *one* node, but the search then follows all of them, and each of those has its own children. In practice patterns contain few dots (often at most 2), which keeps it fast.\n\nTakeaway: wildcards turn a trie lookup from a path walk into a DFS over a subtree, so bound it by the number of nodes it can reach."
+    },
+    {
+      "q": "Counting distinct substrings of a string of length n: the suffix-trie method is O(n²), but adding every `s.substring(i, j)` to a `HashSet<String>` is O(n³). Where does the extra factor of n come from?",
+      "options": [
+        "HashSet lookups degrade to O(n), because similar substrings land in the same bucket",
+        "The HashSet keeps duplicate substrings too, so it stores far more strings than the trie",
+        "Nowhere: substring() is O(1) in Java, so both methods are really O(n²)",
+        "Each substring is copied and hashed in O(length), while the trie extends by one char in O(1)"
+      ],
+      "answer": 3,
+      "why": "`substring` copies the characters into a new string (it has since Java 7u6), and `hashCode`/`equals` read every character, so each of the ~n²/2 substrings costs O(length), which sums to O(n³). The trie inserts the suffix `s[i..]` in one walk: going from `s[i..j-1]` to `s[i..j]` is a single child step, so all substrings starting at i cost O(n − i) together, O(n²) overall.\n\nA set never stores duplicates, and bucket collisions are not the bottleneck; building and hashing whole strings is.\n\nTakeaway: when you enumerate substrings that grow one character at a time, carry the state forward (a trie node, a rolling hash) instead of rebuilding each string."
+    },
+    {
+      "q": "In `findMaximumXOR`, someone swaps the two lines in the loop, so each number is queried before it is inserted. `BitTrie` is the one from the notes: `maxXor` walks all 31 bits, following `child[1 - bit]` when it exists and `child[bit]` otherwise, with no null checks. What happens for `nums = [3, 10, 5, 25, 2, 8]`?",
+      "code": "int findMaximumXOR(int[] nums) {\n    BitTrie t = new BitTrie();\n    int best = 0;\n    for (int x : nums) {\n        best = Math.max(best, t.maxXor(x));   // query first\n        t.insert(x);                          // then insert\n    }\n    return best;\n}",
+      "options": [
+        "Returns 28, since each pair is still compared once, when its later number arrives",
+        "Returns 0, because x itself is never in the trie at the moment it is queried",
+        "Throws NullPointerException during the very first maxXor call, on the empty trie",
+        "Returns 28 here, but would fail on inputs where all numbers are equal"
+      ],
+      "answer": 2,
+      "why": "On the first call the trie is empty: at bit 30, `child[1 - bit]` is null, so the code takes `cur = cur.child[bit]`, which is also null, and the next iteration's `cur.child[...]` throws `NullPointerException`.\n\nThe idea in the first option is sound (query-then-insert compares every pair once), but `maxXor` assumes a non-empty trie; it would work with a guard that skips the query for the first number. The original order (insert, then query) never hits this, because the trie always contains at least `x`, and `x ^ x = 0` is a safe lower bound. With the original order the answer is 28 (`5 ^ 25`).\n\nTakeaway: a bit-trie query walks a fixed 31 levels and needs at least one full path to exist; handle the empty trie explicitly."
+    }
+  ]
+}

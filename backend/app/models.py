@@ -82,9 +82,14 @@ class QState(Strict):
     lc: LcUrl | None = None
 
 
+TopicId = Annotated[str, StringConstraints(pattern=r'^[a-z0-9-]{1,80}$')]
+QuizScores = dict[Literal['easy', 'medium', 'hard'], Annotated[int, Field(ge=0, le=100)]]   # best number right per level
+
+
 class Meta(Strict):
     target: Day | None = None
     reviews: Annotated[dict[Day, Annotated[int, Field(ge=0)]], Field(max_length=20_000)] | None = None
+    quiz: Annotated[dict[TopicId, QuizScores], Field(max_length=500)] | None = None
 
 
 # ---------- notes ----------

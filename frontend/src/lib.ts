@@ -14,7 +14,11 @@ export interface QState {
   done?: string; how?: How; mins?: number; lvl?: number; due?: string;
   rev?: boolean; star?: boolean; note?: string; code?: string; lc?: string;
 }
-export interface Meta { target?: string; reviews?: Record<string, number> }
+export type Level = 'easy' | 'medium' | 'hard';
+export type Scores = Partial<Record<Level, number>>;   // best number right, per level
+export interface Meta { target?: string; reviews?: Record<string, number>; quiz?: Record<string, Scores> }
+export interface QuizQuestion { q: string; code?: string; options: string[]; answer: number; why: string }
+export type QuizBank = Record<Level, QuizQuestion[]>;
 export interface User { id: string; name: string; email: string; is_admin: boolean }
 export interface Filters { tier: string; pattern: string; diff: string; status: string; q: string }
 export type Progress = Record<string, QState>;
@@ -85,18 +89,28 @@ export function streakOf(counts: Record<string, number>) {
   for (let d = counts[today()] ? today() : addDays(today(), -1); counts[d]; d = addDays(d, -1)) n++;
   return n;
 }
-
-// ---------- pattern quiz: the "When to use / signals" bullets of a note ----------
-export interface Card { note: NoteRef; full: string; signal: string }
-export function cardsFrom(note: NoteRef, md: string): Card[] {
-  const block = md.split(/^## /m).find(b => /^When to use/i.test(b)) || '';
-  // Hide the answer: words from the topic's name become blanks, and "signal: answer" bullets show only the signal.
-  const words = (note.title.toLowerCase().match(/[a-z]{4,}/g) || []).filter(w => !['basic', 'basics', 'maths', 'advanced', 'algorithms'].includes(w))
-    .map(w => w.replace(/s$/, ''));
-  const blank = (s: string) => (words.length ? s.replace(new RegExp(`\\b(${words.join('|')})\\w*`, 'gi'), '____') : s);
-  return [...block.matchAll(/^- (.+)$/gm)].map(([, line]) => {
-    const cut = line.indexOf(': ');
-    const answered = cut > 0 && (line.slice(cut).includes('**') || /"$/.test(line.slice(0, cut).trim()));
-    return { note, full: line, signal: blank(answered ? line.slice(0, cut) : line) };
-  });
+// The n months up to `end`, each with its days (the 1st up to the month's end, or `end` in the last month)
+// and how many blank cells come before the 1st in a Sunday-first week.
+export function monthsUpTo(end: string, n = 12) {
+  const months: { first: string; pad: number; days: string[] }[] = [];
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date(end + 'T00:00');
+    d.setDate(1);   // before moving the month, so Mar 31 never rolls into "Feb 31"
+    d.setMonth(d.getMonth() - i);
+    const first = d.toLocaleDateString('en-CA'), days: string[] = [];
+    for (let x = first; x <= end && x.slice(0, 7) === first.slice(0, 7); x = addDays(x, 1)) days.push(x);
+    months.push({ first, pad: d.getDay(), days });
+  }
+  return months;
 }
+
+// ---------- quiz: 5 questions per level for each topic (frontend/src/quiz/<topic>.json) ----------
+export const LEVELS: Level[] = ['easy', 'medium', 'hard'];
+export const LEVEL_NAME: Record<Level, string> = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
+export const PASS = 0.8;   // 4 of 5 right passes a level
+export const passed = (right: number | undefined, total: number) => right !== undefined && right >= PASS * total;
+// Where you stand in a topic: the highest level you have passed ('' = none yet).
+export const standing = (s: Scores = {}, total = 5): Level | '' => [...LEVELS].reverse().find(l => passed(s[l], total)) || '';
+// A score only replaces the saved one when it is better.
+export const withBest = (quiz: Meta['quiz'] = {}, topic: string, level: Level, right: number) =>
+  ({ ...quiz, [topic]: { ...quiz[topic], [level]: Math.max(quiz[topic]?.[level] ?? 0, right) } });

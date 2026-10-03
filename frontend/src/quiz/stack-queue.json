@@ -1,0 +1,180 @@
+{
+  "easy": [
+    {
+      "q": "What does this print?",
+      "code": "Deque<Integer> d = new ArrayDeque<>();\nd.push(1);\nd.push(2);\nd.offer(3);\nSystem.out.println(d.pop() + \" \" + d.pop() + \" \" + d.pop());",
+      "options": [
+        "`3 2 1`",
+        "`1 2 3`",
+        "`2 1 3`",
+        "It throws, because `push` and `offer` cannot be mixed on one deque"
+      ],
+      "answer": 2,
+      "why": "`ArrayDeque` is one double-ended queue: `push` adds at the **head**, `offer` adds at the **tail**, and `pop` removes from the head. After `push(1)` it is `[1]`, after `push(2)` it is `[2, 1]`, after `offer(3)` it is `[2, 1, 3]`. Three pops from the head print `2 1 3`.\n\n`3 2 1` assumes `offer` also adds on top like `push`, and `1 2 3` treats the whole thing as a FIFO queue. Mixing the calls is legal, so nothing throws, but it is usually a bug.\n\nTakeaway: when a `Deque` is your stack, stick to `push`/`pop`/`peek`; when it is your queue, stick to `offer`/`poll`/`peek`."
+    },
+    {
+      "q": "Which string does a stack-based bracket checker report as **not** balanced?",
+      "options": [
+        "`([)]`",
+        "`{[]()}`",
+        "`(()[{}])`",
+        "`[]{}()`"
+      ],
+      "answer": 0,
+      "why": "Each opener is pushed, and each closer must match the opener on **top** of the stack. In `([)]`, after `(` and `[` are pushed the next character is `)`, but the top is `[`, so the check fails immediately.\n\nSimply counting brackets would wrongly accept `([)]`: it has one of each opener and closer. Only a stack catches the wrong nesting order. The other three strings close every bracket in reverse order of opening and end with an empty stack.\n\nTakeaway: brackets must close last-opened-first, which is exactly what a stack enforces; also check that the stack is empty at the end."
+    },
+    {
+      "q": "A queue is built from two stacks: `push` goes onto `in`; `pop` takes from `out`, and only when `out` is empty does it first move everything from `in` to `out`. What does `pop` cost?",
+      "options": [
+        "O(1) worst case; a pop is always a single `out.pop()` call",
+        "O(1) amortised; each element moves from `in` to `out` at most once",
+        "O(n) per pop; every pop moves all the elements across and back",
+        "O(n) amortised; one big transfer makes every later pop pay for it"
+      ],
+      "answer": 1,
+      "why": "One `pop` can cost O(n) when `out` is empty and n elements are transferred, so the worst case is not O(1). But each element is pushed onto `in` once, moved to `out` once and popped from `out` once: at most 3 stack operations in its whole life. Spread over all operations, that is O(1) amortised.\n\nNothing is ever moved back to `in`, and after one transfer the next pops are plain `out.pop()` calls, which is why the O(n) options are wrong.\n\nTakeaway: transfer lazily, only when `out` is empty, so each element pays for its move exactly once."
+    },
+    {
+      "q": "The next greater element of each item is the first item to its right that is strictly larger, or -1 if none. What is the result for `[2, 7, 3, 5, 4, 6, 8]`?",
+      "options": [
+        "`[7, -1, 5, -1, 6, 8, -1]`",
+        "`[8, 8, 8, 8, 8, 8, -1]`",
+        "`[-1, -1, 7, 7, 5, 7, -1]`",
+        "`[7, 8, 5, 6, 6, 8, -1]`"
+      ],
+      "answer": 3,
+      "why": "Scan right to left with a stack of candidates. At 5 the stack holds `[8, 6, 4]` (bottom to top); 4 ≤ 5 is popped, so the answer is 6. At 7, the smaller candidates 3, 5 and 6 are popped, so its answer is 8, which is far from it.\n\n`[7, -1, 5, -1, ...]` only looks at the immediate neighbour, `[8, 8, ...]` is the maximum to the right, and `[-1, -1, 7, 7, ...]` is the *previous* greater element.\n\nTakeaway: \"first greater to the right\" is a monotonic stack problem, and the answer can be far away."
+    },
+    {
+      "q": "For each day you need the number of days until a strictly warmer temperature (0 if none). Which approach does this in O(n)?",
+      "options": [
+        "A stack of indices with decreasing temperatures; a warmer day pops colder days and answers them",
+        "A min-heap of (temperature, index) pairs, polling waiting days colder than the current day",
+        "A FIFO queue of indices, answering waiting days in the order they arrived",
+        "Sort the days by temperature, then binary search each day's next warmer day"
+      ],
+      "answer": 0,
+      "why": "This is next greater element with distances, so keep **indices** on a monotonic stack. Scanning left to right, while day i is warmer than the day on top, that day's answer is `i - top`; pop it, repeat, then push i. Each index is pushed and popped at most once, so the pass is O(n).\n\nThe min-heap version does give correct answers (poll while the coldest waiting day is colder than today), but each operation is O(log n), so it is O(n log n). A FIFO queue can only answer the oldest waiting day first, yet that day may be the warmest and wait longest while later, colder days are already answered. Sorting throws away the left-to-right order that \"next\" depends on.\n\nTakeaway: \"next/previous greater or smaller\" means a monotonic stack; store indices when you need distances."
+    }
+  ],
+  "medium": [
+    {
+      "q": "Convert `a-b+c*d` to postfix with the standard stack algorithm (`*` binds tighter than `+` and `-`, which are left-associative).",
+      "options": [
+        "`abcd*+-`",
+        "`ab-cd*+`",
+        "`ab-c+d*`",
+        "`ab-cd+*`"
+      ],
+      "answer": 1,
+      "why": "`a` goes to the output and `-` is pushed. `b` goes out (`ab`). `+` has the same precedence as the `-` on the stack and is left-associative, so `-` is popped first (`ab-`), then `+` is pushed. `c` goes out, `*` is pushed on top of `+` because it binds tighter, and `d` goes out (`ab-cd`). At the end the stack is popped from the top, `*` then `+`, giving `ab-cd*+`, which means `(a-b)+(c*d)`.\n\n`abcd*+-` comes from not popping on equal precedence, and it computes `a-(b+c*d)`. `ab-cd+*` drains the stack bottom first, and `ab-c+d*` ignores precedence entirely.\n\nTakeaway: before pushing an operator, pop everything with higher precedence, plus equal precedence unless the operator is right-associative like `^`."
+    },
+    {
+      "q": "This evaluates postfix tokens. What does it return for `[\"10\", \"2\", \"-\", \"4\", \"/\"]`, meant as (10 - 2) / 4?",
+      "code": "Deque<Integer> st = new ArrayDeque<>();\nfor (String t : tokens) {\n    if (t.equals(\"-\")) { int a = st.pop(), b = st.pop(); st.push(a - b); }\n    else if (t.equals(\"/\")) { int a = st.pop(), b = st.pop(); st.push(a / b); }\n    else st.push(Integer.parseInt(t));\n}\nreturn st.pop();",
+      "options": [
+        "2",
+        "-2",
+        "-1",
+        "0"
+      ],
+      "answer": 3,
+      "why": "The first pop returns the **right** operand, because it was pushed last. This code calls it `a` and computes `a - b`, so `10 2 -` gives `2 - 10 = -8`. Then `-8 4 /` gives `4 / -8`, and Java's integer division truncates toward zero, so the result is `0` (not `-1`, which would be floor division).\n\nThe correct code is `int b = st.pop(), a = st.pop();`, which returns `(10 - 2) / 4 = 2`. `-2` is what you'd get if only the subtraction were reversed.\n\nTakeaway: in postfix evaluation pop the right operand first; the order matters for `-` and `/`."
+    },
+    {
+      "q": "A day's stock span is the number of consecutive days, ending today and going back, whose price is ≤ today's price. What are the spans for `[100, 80, 60, 70, 60, 75, 85]`?",
+      "options": [
+        "`[1, 1, 1, 2, 2, 4, 6]`",
+        "`[1, 1, 1, 2, 1, 2, 3]`",
+        "`[1, 1, 1, 2, 1, 4, 6]`",
+        "`[1, 2, 3, 1, 5, 1, 1]`"
+      ],
+      "answer": 2,
+      "why": "Walk back from each day while the price is ≤ today's: 70 covers itself and 60 (2); the second 60 is stopped at once by 70 (1); 75 covers 60, 70, 60 and itself, then stops at 80 (4); 85 covers everything back to 80 and stops at 100 (6).\n\nThe O(n) version keeps a stack of `{price, span}`: a new price pops every entry ≤ it and adds their spans, so whole blocks are absorbed at once. `[..., 2, 4, 6]` with a 2 for the second 60 counts all earlier cheaper days instead of consecutive ones, `[..., 2, 3]` only counts the increasing run ending today, and `[1, 2, 3, ...]` flips the comparison.\n\nTakeaway: span = distance back to the previous greater price, which a monotonic stack finds."
+    },
+    {
+      "q": "You need a stack with `push`, `pop`, `top` and `getMin`, all O(1). Which design is correct?",
+      "options": [
+        "Push each value together with the minimum at that depth; `getMin` reads it from the top entry",
+        "Keep a single `min` field, update it on every push, and return it from `getMin`",
+        "Keep a min-heap of all values beside the stack; `getMin` peeks the heap",
+        "Keep the stack sorted on every push, so that the minimum is always on top"
+      ],
+      "answer": 0,
+      "why": "Storing `{value, minSoFar}` means each depth remembers the minimum of everything at or below it, so after a pop the previous minimum is automatically on top again.\n\nA single `min` field breaks when the minimum is popped: push 3, push 1, pop leaves `min = 1` although only 3 remains, and recovering 3 needs a scan. A side heap makes push O(log n), and pop must delete an arbitrary value from the heap (O(n) in `PriorityQueue`). Sorting on push destroys LIFO order, so pop returns the wrong element.\n\nTakeaway: when a stack needs an aggregate such as min or max, store the aggregate with each entry."
+    },
+    {
+      "q": "Asteroids move along a line: positive moves right, negative moves left, and the absolute value is the size. When two meet, the smaller explodes (both if equal). What remains of `[5, 10, -5, -12, 3]`?",
+      "options": [
+        "`[-12]`",
+        "`[5, -12, 3]`",
+        "`[5, 10, 3]`",
+        "`[-12, 3]`"
+      ],
+      "answer": 3,
+      "why": "Keep a stack of survivors. 5 and 10 move right and are pushed. -5 meets 10, which is bigger, so -5 explodes. -12 meets 10 (10 explodes), then 5 (5 explodes), then the stack is empty, so -12 survives. 3 moves right, away from -12, so there is no collision and it is pushed.\n\nA collision only happens when the top moves right and the new asteroid moves left, so `[-12]` wrongly crashes -12 into 3. `[5, -12, 3]` stops after the first collision instead of looping, and `[5, 10, 3]` compares signed values (-12 < 10) instead of sizes.\n\nTakeaway: a new left-mover keeps popping smaller right-movers in a `while` loop, a typical stack simulation."
+    }
+  ],
+  "hard": [
+    {
+      "q": "In this next-greater-element loop one iteration of the inner `while` can pop many elements. Why is the whole algorithm still O(n) in the worst case?",
+      "code": "for (int i = n - 1; i >= 0; i--) {\n    while (!st.isEmpty() && st.peek() <= a[i]) st.pop();\n    res[i] = st.isEmpty() ? -1 : st.peek();\n    st.push(a[i]);\n}",
+      "options": [
+        "The stack is sorted, so it never holds more than O(log n) elements at a time",
+        "On random input the inner loop pops about one element per step on average",
+        "Each iteration pops at most one element, since the stack is kept in decreasing order",
+        "Each element is pushed once and popped at most once, so all the pops together total at most n"
+      ],
+      "answer": 3,
+      "why": "Count over the whole run instead of per iteration. There are exactly n pushes, and an element can only be popped after it was pushed, and only once. So all the pops together total at most n, and the loop is O(n + n) = O(n), even though one iteration can pop many: in `[2, 7, 3, 5, 4, 6, 8]` the 7 pops three elements.\n\nThe stack is not limited to O(log n): on `[1, 2, ..., n]` all n values stay on it. And the bound is a worst-case (amortised) bound, not an average over random input.\n\nTakeaway: for monotonic stacks argue \"each element goes in once and out once\", the same aggregate argument used for two-pointer and sliding-window loops."
+    },
+    {
+      "q": "Sum of subarray minimums by contribution: `a[i]` is the minimum of `left[i] * right[i]` subarrays. This version pops with `>=` in **both** scans. What does it return for `[2, 2]` (the true sum is 2 + 2 + 2 = 6)?",
+      "code": "for (int i = 0; i < n; i++) {               // previous strictly smaller\n    while (!st.isEmpty() && a[st.peek()] >= a[i]) st.pop();\n    left[i] = st.isEmpty() ? i + 1 : i - st.peek();\n    st.push(i);\n}\nst.clear();\nfor (int i = n - 1; i >= 0; i--) {          // next strictly smaller\n    while (!st.isEmpty() && a[st.peek()] >= a[i]) st.pop();\n    right[i] = st.isEmpty() ? n - i : st.peek() - i;\n    st.push(i);\n}\n// answer = sum of a[i] * left[i] * right[i]",
+      "options": [
+        "8: the subarray `[2, 2]` is counted once for each of its two equal minimums",
+        "6: ties do not matter here, because either 2 is a valid minimum",
+        "4: the subarray `[2, 2]` is not counted for either of its two minimums",
+        "12: each 2 is counted as the minimum of all three subarrays"
+      ],
+      "answer": 0,
+      "why": "Element 0: there is no strictly smaller element on either side (the other 2 is popped by `>=`), so `left = 1`, `right = 2`, and it claims `[2]` and `[2, 2]`. Element 1 gets `left = 2`, `right = 1` and also claims `[2, 2]`. So `[2, 2]` is counted twice: 2·2 + 2·2 = 8.\n\nPopping with `>` on both sides is the opposite bug: neither element claims `[2, 2]`, giving 4. The fix is to make one side strict and the other not, e.g. `>` in the left scan and `>=` in the right scan, so every run of equal values is owned by exactly one element (here the left 2), giving 6.\n\nTakeaway: with duplicates, contribution counting needs asymmetric boundaries so each subarray is credited exactly once."
+    },
+    {
+      "q": "This largest-rectangle-in-histogram loop forgot the sentinel: it runs `i < n` instead of `i <= n` with height 0 at `i == n`. What does it return for heights `[2, 4, 6]` (true answer 8)?",
+      "code": "int best = 0;\nDeque<Integer> st = new ArrayDeque<>();\nfor (int i = 0; i < n; i++) {\n    while (!st.isEmpty() && h[st.peek()] >= h[i]) {\n        int height = h[st.pop()];\n        int left = st.isEmpty() ? -1 : st.peek();\n        best = Math.max(best, height * (i - left - 1));\n    }\n    st.push(i);\n}\nreturn best;",
+      "options": [
+        "8",
+        "6",
+        "0",
+        "18"
+      ],
+      "answer": 2,
+      "why": "Areas are only computed when a bar is **popped**, and a bar is popped only when a lower-or-equal bar arrives on its right. In `[2, 4, 6]` the heights only increase, so nothing is popped, all three indices are still on the stack at the end, and `best` is still 0.\n\nThose leftover bars should have been closed with the right edge at n: 2×3 = 6, 4×2 = 8, 6×1 = 6, so the answer is 8. A height-0 sentinel at `i == n` is lower than every bar and flushes the stack (a cleanup loop after the main loop works too). 18, the tallest bar times the full width, is not a valid rectangle because the bar of height 2 is in the way.\n\nTakeaway: in monotonic-stack boundary problems, make sure every element on the stack is eventually popped and processed."
+    },
+    {
+      "q": "This sliding-window maximum stores **values** in the deque and evicts the front when it equals the value leaving the window. For `nums = [3, 3, 1]`, `k = 2` it returns `[3, 1]` instead of `[3, 3]`. Which single change fixes it?",
+      "code": "for (int i = 0; i < n; i++) {\n    if (i >= k && !dq.isEmpty() && dq.peekFirst() == nums[i - k]) dq.pollFirst();\n    while (!dq.isEmpty() && dq.peekLast() <= nums[i]) dq.pollLast();\n    dq.offerLast(nums[i]);\n    if (i >= k - 1) res[i - k + 1] = dq.peekFirst();\n}",
+      "options": [
+        "Evict with `pollLast()` instead of `pollFirst()` when the outgoing value matches",
+        "Pop from the back only while `peekLast() < nums[i]`, so equal values stay as separate entries",
+        "Compare with `peekFirst().equals(nums[i - k])`, because `==` on boxed `Integer` is unreliable",
+        "Move the eviction check after `offerLast(nums[i])`, so the new value is in the deque first"
+      ],
+      "answer": 1,
+      "why": "With `<=`, the second 3 pops the first 3, so the deque holds a single 3 that stands for the newer one. At i = 2 the value leaving the window is the **old** 3, but it matches the front, so the newer 3, still inside the window, is evicted and the max becomes 1. With `<`, both 3s stay in the deque; eviction removes the old one and the new one remains the max.\n\nThe outgoing element is always at the front, so evicting from the back is wrong. `peekFirst() == nums[i - k]` compares an `Integer` with an `int`, which unboxes, so `equals` changes nothing. Moving the eviction after the push still evicts the newer 3. Storing **indices** and evicting when `peekFirst() <= i - k` avoids the ambiguity entirely, which is why it is the usual template.\n\nTakeaway: if a monotonic deque stores values, equal values must not collapse into one entry; evicting by index is the safest rule."
+    },
+    {
+      "q": "This LRU cache (HashMap + doubly linked list with dummy head and tail, most recent at the front) forgets one line on eviction. `get` is the usual one (look up the node, `remove(n)`, `addFront(n)`, return its value), and `remove(n)` only relinks the neighbours (`n.prev.next = n.next; n.next.prev = n.prev`), leaving `n`'s own pointers as they were. With capacity 1, what does `get(1)` return after `put(1, 1)` and `put(2, 2)`?",
+      "code": "public void put(int key, int value) {\n    Node n = map.get(key);\n    if (n != null) { n.val = value; remove(n); addFront(n); return; }\n    if (map.size() == cap) {\n        Node lru = tail.prev;\n        remove(lru);              // map.remove(lru.key) is missing\n    }\n    n = new Node(key, value);\n    map.put(key, n);\n    addFront(n);\n}",
+      "options": [
+        "1",
+        "-1",
+        "2",
+        "It throws `NullPointerException`"
+      ],
+      "answer": 0,
+      "why": "`remove(lru)` takes node 1 out of the list, but the map still maps key 1 to it. `get(1)` finds it in the map and returns 1, a value that should have been evicted. Re-linking that stale node uses its old `prev`/`next`, which still point at the dummies, so there is no exception; instead node 2 is knocked out of the list while the map grows past capacity.\n\nThe fix is `map.remove(lru.key)`, and this is exactly why every node stores its **key**: on eviction you only hold the tail node, and you need its key to delete the map entry.\n\nTakeaway: in an LRU cache the map and the list must always change together; every eviction from the list needs a matching map removal."
+    }
+  ]
+}

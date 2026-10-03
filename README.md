@@ -52,12 +52,12 @@ For frontend work, run `npm run dev` in `frontend/` as well and open http://loca
 The app opens on **Today**, your plan for the day:
 
 - **Reviews due**: every solved question whose spaced-repetition review is due, from both roadmaps.
-- **New today**: the next unsolved questions in the Learning Series. Set a **finish date** and the daily number is worked out for you (questions left ÷ days left, fixed at the start of the day). With no date it is 3 a day (`DAILY_NEW` in `frontend/src/lib.ts`).
-- **Activity**: a 20-week heatmap of solves and reviews, and your current streak.
+- **New today**: the next unsolved questions in the Learning Series. Set a **finish date** (tomorrow or later) and the daily number is worked out for you (questions left ÷ days left, today and the finish day included, fixed at the start of the day). With no date, or a date that is today or has passed, it is 3 a day (`DAILY_NEW` in `frontend/src/lib.ts`).
+- **Activity**: the last 12 months of solves and reviews, one block per month (hover a day for its count, a month name for the month's total), plus your active days, longest streak and current streak.
 
 ## Solving a question
 
-- When you tick a question, the app asks **How did it go?** and saves *Solved alone* until you pick something else. Needing a hint or seeing the solution brings the first review forward to tomorrow, and seeing the solution also marks the question to revise.
+- When you tick a question it is saved as *Solved alone*, and a **How did it go?** dropdown appears on the row: *Solved alone*, *Needed a hint* or *Saw the solution*. You can change it any time. Needing a hint or seeing the solution brings the next review forward to tomorrow, and seeing the solution also marks the question to revise.
 - **Timer**: opening an unsolved question (its title or a link chip) starts a timer in the header, and ticking it records the minutes. You can also start or stop it with the timer button on the row. Only one timer runs at a time.
 - **LeetCode links**: every Learning Series question has a LeetCode chip. Where the exact problem is not on LeetCode, the chip is **LC (similar)**: a free LeetCode problem that practises the same idea.
 - **Your own LeetCode link**: a question with no LeetCode link at all (in a roadmap you add) gets a **+ LC** chip. Paste a LeetCode URL or just the slug (`two-sum`). It is shown first and used for the title link. The pencil chip edits it; leave it blank to remove it.
@@ -66,7 +66,7 @@ The app opens on **Today**, your plan for the day:
 
 ## How the roadmap works
 
-- The Learning Series follows Striver's steps (basics → sorting → arrays → bits → maths → hashing → binary search → strings → sliding window → recursion → … → graphs → hard backtracking → DP → tries), and each step's sub-steps are shown as groups. Inside a group the questions go from the building block to the problems that use it, easier ones first, with the Hard ones at the end of the group. The **Topic map** shows which steps build on which.
+- The Learning Series follows Striver's steps (basics → sorting → arrays → bits → maths → hashing → binary search → strings → sliding window → recursion → … → graphs → hard backtracking → DP → tries), and each step's sub-steps are folding sections inside it, with their own solved count (filters open them all, and **Next up** opens the one it jumps to). Inside a sub-step the questions go from the building block to the problems that use it, easier ones first, with the Hard ones at the end of the group. The **Topic map** shows which steps build on which.
 - A topic counts as done once 70% of its questions are solved (`PREREQ_DONE` in `frontend/src/lib.ts`; 1.0 = every question).
 - **Next up** jumps to the first unsolved question, following the sheet's order. It respects your filters.
 - Every Learning Series question carries Striver's **pattern** tags (Two Pointer, Monotonic Stack / Queue, Search on Answer …). The pattern filter shows one pattern across all topics.
@@ -84,12 +84,12 @@ Reviews follow the steps 1, 3, 7, 15, 30 and 60 days (`REVIEW_DAYS` in `frontend
 ## Practice
 
 - **Mock interview** (button on Practice 50): one random unsolved question with a 45-minute countdown and the topic hidden. **Show topic** reveals it; using it records the question as solved with a hint.
-- **Quiz**: flashcards made from the "When to use / signals" section of every pattern note. Read the signal, name the technique, then reveal the answer. Missed cards come back later in the deck. You can limit it to one topic.
+- **Quiz**: every Learning Series topic has 15 multiple-choice questions, 5 each at easy, medium and hard, with a full explanation for every question. Answer one at a time (or click *I don't know, show the answer*); the options are shuffled on every try. Getting 4 of 5 right passes a level, and your **level** in a topic is the hardest level you have passed. The quiz page lists every topic with its level and your best score at each difficulty; best scores are saved with your progress.
 
 ## Keyboard shortcuts
 
 - `/` focuses the search box, `n` jumps to Next up, `Esc` leaves a text box.
-- In the quiz, `Space` shows the answer.
+- In the quiz, `1`–`4` pick an option and `Enter` goes to the next question.
 
 ## Deploy on Vercel
 
@@ -131,10 +131,12 @@ Roadmaps and notes are loaded into MongoDB from `content/` by `python -m app.cli
 
 `id` is the progress key and must be unique across all roadmaps. `diff` is `E`/`M`/`H`. `needs` lists earlier topics a question depends on; they show as lock chips until those topics are done. `needs` and `prereqs` must name **earlier** topics. `tier` (`basic`/`core`/`pro`), `patterns`, `alt`, `video`, `article` and `premium` are optional. `alt` holds extra practice links shown as chips next to the main one, for example `{ "GFG": "https://…", "LC Premium": "https://…" }`.
 
+- **Quiz questions**: one file per Learning Series topic, `frontend/src/quiz/<topic id>.json`, shaped `{ "easy": [5 questions], "medium": [5], "hard": [5] }`. A question is `{ "q", "code" (optional Java), "options" (4), "answer" (index of the right option), "why" (markdown) }`. Options are shuffled when shown, so none may say "all of the above" or point at another option. They ship with the frontend, so no seed is needed; `tests/test_quiz.py` checks every file.
+
 ## Tests
 
 ```sh
 cd backend && .venv/bin/pytest -q
 ```
 
-They run against the `MONGODB_URI` in `.env`, in a throwaway `dsa_tracker_test_…` database that is dropped afterwards. They cover login and the 30-day cookie, rate limiting, invites (single use, expiry, revoke), admin-only note editing, progress validation and privacy between users.
+They run against the `MONGODB_URI` in `.env`, in a throwaway `dsa_tracker_test_…` database that is dropped afterwards. They cover login and the 30-day cookie, rate limiting, invites (single use, expiry, revoke), admin-only note editing, progress and quiz-score validation and privacy between users. `tests/test_quiz.py` needs no database: it checks that every Learn topic has a well-formed quiz.

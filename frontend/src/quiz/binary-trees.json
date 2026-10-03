@@ -1,0 +1,182 @@
+{
+  "easy": [
+    {
+      "q": "What is the **postorder** traversal of this tree (LeetCode level-order `[1,2,3,4,5,null,6]`)?",
+      "code": "        1\n       / \\\n      2   3\n     / \\   \\\n    4   5   6",
+      "options": [
+        "4 2 5 1 3 6",
+        "1 2 4 5 3 6",
+        "4 5 2 6 3 1",
+        "6 3 5 4 2 1"
+      ],
+      "answer": 2,
+      "why": "Postorder is left, right, root: a node is written only after both of its subtrees are finished. Trace: inside 2's subtree we get 4, 5, then 2; inside 3's subtree there is no left child, so 6, then 3; the root 1 comes last, giving `4 5 2 6 3 1`.\n\nThe tempting `6 3 5 4 2 1` is the preorder reversed, which is (right, left, root): it mirrors left and right, so it is not postorder. `4 2 5 1 3 6` is inorder and `1 2 4 5 3 6` is preorder.\n\nTakeaway: the name says where the root goes (pre = first, in = middle, post = last), and the left subtree is always finished before the right. That is also why iterative postorder reverses (root, **right**, left), not plain preorder."
+    },
+    {
+      "q": "This recursive `maxDepth` allocates no list, stack or queue. What is its worst-case **extra space** for a tree with n nodes?",
+      "code": "int maxDepth(TreeNode n) {\n    if (n == null) return 0;\n    return 1 + Math.max(maxDepth(n.left), maxDepth(n.right));\n}",
+      "options": [
+        "O(n), when the tree is one long chain",
+        "O(log n), since a tree has about log n levels",
+        "O(1), since no collection is ever allocated",
+        "O(n log n), one frame per node on every level"
+      ],
+      "answer": 0,
+      "why": "Every pending recursive call holds a stack frame, and the call stack is at most as deep as the tree's height h, so the extra space is O(h). In a balanced tree h is about log n, but in a skewed tree (every node has only one child, like a linked list) h = n, so the worst case is O(n).\n\nO(1) is the classic mistake: the call stack is memory even though you never wrote `new`. O(log n) is only the balanced case, not the worst case.\n\nTakeaway: recursive tree DFS costs O(h) space. Say O(h), which is O(log n) when balanced and O(n) when skewed; in Java a 10^5-node chain can even throw `StackOverflowError`, which is when you switch to an iterative version."
+    },
+    {
+      "q": "A binary tree has exactly 15 nodes. Measuring height as the number of **nodes** on the longest root-to-leaf path, which heights are possible?",
+      "options": [
+        "Anything from 1 to 15",
+        "Anything from 4 to 8",
+        "Anything from 3 to 14",
+        "Anything from 4 to 15"
+      ],
+      "answer": 3,
+      "why": "The shortest tree fills every level: levels hold 1, 2, 4 and 8 nodes, and 1 + 2 + 4 + 8 = 15, so a perfect tree of height 4 fits all 15 nodes (in general the minimum height is ceil(log2(n + 1))). The tallest tree is a chain where each node has one child, giving height 15.\n\n`1 to 15` forgets that a node has at most two children, so you cannot hang 14 nodes directly under the root. `3 to 14` is the same range counted in edges, which the question ruled out, and `4 to 8` wrongly assumes a binary tree must stay roughly balanced.\n\nTakeaway: h ranges from about log2 n to n. That is why every O(h) bound in this topic means O(log n) for balanced trees and O(n) for skewed ones."
+    },
+    {
+      "q": "This iterative preorder pushes the **right** child before the left child. Why?",
+      "code": "Deque<TreeNode> st = new ArrayDeque<>();\nst.push(root);\nwhile (!st.isEmpty()) {\n    TreeNode n = st.pop();\n    res.add(n.val);\n    if (n.right != null) st.push(n.right);\n    if (n.left != null) st.push(n.left);\n}",
+      "options": [
+        "Preorder visits the right subtree first, so it has to be pushed first",
+        "A stack is last-in first-out, so the left child pushed last is popped next",
+        "Pushing right first keeps the stack from ever holding more than h nodes",
+        "`ArrayDeque` rejects nulls, and this order avoids pushing a null child"
+      ],
+      "answer": 1,
+      "why": "A stack pops the most recently pushed item first. Preorder must finish the whole left subtree before the right one, so the left child has to be on top: push right, then left, and the left pops next.\n\nTrace on `[1,2,3,4,5,null,6]`: pop 1 (push 3, then 2), pop 2 (push 5, then 4), pop 4, pop 5, pop 3 (push 6), pop 6, giving `1 2 4 5 3 6`. Pushing left first would print `1 3 6 2 5 4`, a mirrored preorder. The `!= null` checks are what keep nulls out of the `ArrayDeque`; the order of the two pushes has nothing to do with that.\n\nTakeaway: with a stack, push things in the reverse of the order you want to visit them."
+    },
+    {
+      "q": "To check whether a tree is symmetric (a mirror image of itself), you call `isMirror(root.left, root.right)`. After checking `a.val == b.val`, what must `isMirror(a, b)` recurse on?",
+      "options": [
+        "Same side with same side: `(a.left, b.left)` and `(a.right, b.right)`",
+        "Each half with itself: `(a.left, a.right)` and `(b.left, b.right)`",
+        "Outer with outer, inner with inner: `(a.left, b.right)` and `(a.right, b.left)`",
+        "No recursion: compare the inorder of `a` with the reversed inorder of `b`"
+      ],
+      "answer": 2,
+      "why": "Fold the tree along its vertical centre line: the right half's right child lands on the left half's left child. So the outer pair `(a.left, b.right)` and the inner pair `(a.right, b.left)` must both be mirrors.\n\nSame side with same side is the Same Tree check: it returns false for the symmetric tree `[1,2,2,3,4,4,3]` (it compares 3 with 4). Each half with itself returns true for `[1,2,2,3,3,4,4]`, which is not symmetric (3 faces 4 on the outside). The inorder trick fails because it drops the shape: in `[1,2,2,2,null,2]` both halves are a 2 with a **left** child 2, so the sequences match, but a mirror would need a right child.\n\nTakeaway: symmetric tree = isMirror(left, right) with crossed pairs; same tree = same pairs. Both are O(n) time, O(h) space."
+    }
+  ],
+  "medium": [
+    {
+      "q": "This level-order code has a subtle bug in its loop condition. What does it return for `[1,2,3,4,5]` (LeetCode level-order format: 1 has children 2 and 3, and 2 has children 4 and 5)?",
+      "code": "while (!q.isEmpty()) {\n    List<Integer> level = new ArrayList<>();\n    for (int i = 0; i < q.size(); i++) {\n        TreeNode n = q.poll();\n        level.add(n.val);\n        if (n.left != null) q.offer(n.left);\n        if (n.right != null) q.offer(n.right);\n    }\n    res.add(level);\n}",
+      "options": [
+        "[[1], [2, 3], [4, 5]]",
+        "[[1, 2, 3], [4], [5]]",
+        "[[1, 2], [3, 4], [5]]",
+        "[[1], [2, 3, 4, 5]]"
+      ],
+      "answer": 1,
+      "why": "`q.size()` is re-read on every iteration while the same loop is polling and offering, so the level boundary drifts. Trace: q = [1]; i=0 < 1 polls 1 and adds 2, 3; i=1 < 2 polls 2 and adds 4, 5; i=2 < 3 polls 3; i=3 < 2 stops, so the first 'level' is [1, 2, 3]. Then q = [4, 5]: i=0 polls 4, and i=1 < 1 stops, giving [4], and finally [5].\n\n`[[1], [2, 3], [4, 5]]` is what the correct code returns; the bug changes it. Fix: freeze the size before the loop, `for (int i = q.size(); i > 0; i--)` or `int size = q.size();`.\n\nTakeaway: in level-order BFS, read the queue size once per level, because the queue holds the current level plus the next level being added."
+    },
+    {
+      "q": "Problem: return the values you would see standing to the **right** of a binary tree, from top to bottom. Which approach is correct?",
+      "options": [
+        "Start at the root and follow `.right` pointers, collecting each node",
+        "Collect every node that has no right child, from top to bottom",
+        "Preorder (root, left, right), keeping the first node seen at each depth",
+        "Level order (BFS), keeping only the last node dequeued on each level"
+      ],
+      "answer": 3,
+      "why": "You see exactly one node per level: the rightmost node on that level, whichever subtree it lives in. BFS level by level and keeping the last node of each level gives exactly that (so does DFS that visits right before left and keeps the first node at each new depth).\n\nFollowing `.right` fails on `[1,2,3,4]`: the right view is `[1, 3, 4]`, and 4 is a child of 2 in the **left** subtree, which a right-only walk never reaches. Preorder with left before right, keeping the first node per depth, produces the **left** view. Nodes without a right child have nothing to do with visibility (in `[1,2,3,4]` that gives 2, 3, 4).\n\nTakeaway: 'view' problems are 'one node per level' problems: BFS by level, or DFS that carries the depth and visits children in the right order. O(n) time."
+    },
+    {
+      "q": "Using this standard recursive LCA on `[3,5,1,6,2,0,8,null,null,7,4]` (LeetCode level-order format: 5's children are 6 and 2, and 2's children are 7 and 4), what is returned for p = node 5 and q = node 4?",
+      "code": "TreeNode lca(TreeNode root, TreeNode p, TreeNode q) {\n    if (root == null || root == p || root == q) return root;\n    TreeNode l = lca(root.left, p, q);\n    TreeNode r = lca(root.right, p, q);\n    if (l != null && r != null) return root;\n    return l != null ? l : r;\n}",
+      "options": [
+        "Node 5, which is p itself",
+        "Node 3, which is the root",
+        "Node 2, which is the parent of 4",
+        "null, because node 4 is never reached"
+      ],
+      "answer": 0,
+      "why": "At root 3, the left call reaches node 5 == p and returns it immediately, without searching below it. The right call searches 1, 0 and 8 and returns null. Only one side is non-null, so 3 passes node 5 up as the answer.\n\nThat is correct: when q lies inside p's subtree, p itself is the lowest common ancestor (a node counts as its own ancestor). The 'never reached' worry misses what the function returns: 'the first of p or q found on this side'. If the other side found nothing, the other node must be under the one we found (the problem guarantees both exist), so there is no need to look further.\n\nTakeaway: LCA is the node where p and q come from different sides, or the first of them met on the way down. O(n) time, O(h) space."
+    },
+    {
+      "q": "A binary tree with distinct values has preorder `[10, 4, 7, 2, 9, 6]` and inorder `[7, 4, 2, 10, 6, 9]`. What is its postorder?",
+      "options": [
+        "7 2 4 9 6 10",
+        "2 7 4 6 9 10",
+        "7 2 4 6 9 10",
+        "6 9 2 7 4 10"
+      ],
+      "answer": 2,
+      "why": "The first preorder value, 10, is the root. In the inorder it splits `[7, 4, 2]` (left subtree) from `[6, 9]` (right subtree). The next preorder value, 4, roots the left part, with 7 on its left and 2 on its right. Then 9 roots the right part, and 6 comes before 9 in the inorder, so 6 is 9's left child. Postorder (left, right, root) is `7 2 4`, then `6 9`, then `10`.\n\n`7 2 4 9 6 10` makes 6 the parent of 9, but preorder lists 9 first, so 9 is the root of that part. `2 7 4 ...` swaps 4's children, ignoring the inorder, and `6 9 2 7 4 10` is just the preorder reversed.\n\nTakeaway: preorder (or postorder) tells you which value is the root; inorder tells you which values go left and right. With a value-to-index `HashMap` for the inorder, the rebuild is O(n)."
+    },
+    {
+      "q": "Problem: given a `target` node and an integer k, return every node exactly k edges away from it. Nodes have only `left` and `right` pointers. Which approach handles every case?",
+      "options": [
+        "DFS from the target into its subtrees, collecting the nodes at depth k",
+        "Record every node's parent, then BFS k levels outward from the target",
+        "BFS from the root and return the whole level at depth(target) + k",
+        "Run inorder and take the nodes k positions before and after the target"
+      ],
+      "answer": 1,
+      "why": "A node at distance k can be below the target, above it, or down a sibling branch (up to an ancestor, then down the other side). Child pointers only go down, so first record each node's parent (one O(n) traversal), then treat the tree as an undirected graph and BFS from the target with a visited set. After k rounds, the queue holds exactly the answer.\n\nDFS downward alone misses everything reached through the parent, such as the target's sibling at k = 2. The level at depth(target) + k contains nodes from unrelated branches and misses the ones above. Inorder positions measure sorted order, not edges.\n\nTakeaway: when a tree problem needs to move upward (distance K, burning a tree from a node), build parent links and run BFS. O(n) time and O(n) space."
+    }
+  ],
+  "hard": [
+    {
+      "q": "With `maxSum` starting at `Integer.MIN_VALUE`, what maximum path sum does this code find for `[5,-8,4,9,6,null,-1]` (LeetCode level-order format: 5 has children -8 and 4, -8 has children 9 and 6, and 4 has a right child -1)?",
+      "code": "int gain(TreeNode n) {\n    if (n == null) return 0;\n    int l = Math.max(0, gain(n.left));\n    int r = Math.max(0, gain(n.right));\n    maxSum = Math.max(maxSum, n.val + l + r);\n    return n.val + Math.max(l, r);\n}",
+      "options": [
+        "16",
+        "9",
+        "10",
+        "24"
+      ],
+      "answer": 2,
+      "why": "Bottom-up: gain(9) = 9 and gain(6) = 6, so at -8 the bent path 9 → -8 → 6 scores 7, and -8 returns -8 + max(9, 6) = 1 to its parent. gain(-1) is clamped to 0, so 4 returns 4. At the root, 5 + 1 + 4 = 10: the path 9 → -8 → 5 → 4, which beats 9 alone and 7.\n\n16 is what you get if a node returns `n.val + l + r`: -8 would hand 7 (9 + 6 - 8) to its parent, but a path cannot fork, so the parent may extend only one branch. 9 assumes a negative node is never on the best path; -8 is worth crossing because it connects 9 to 5 + 4 above it. 24 adds every positive value, ignoring that a path must be connected.\n\nTakeaway: at each node, update the answer with both branches (the path bends here), return only one branch upward, and clamp negative gains to 0. Start `maxSum` at `Integer.MIN_VALUE`, not 0, so an all-negative tree like `[-2,-1,-3]` returns -1."
+    },
+    {
+      "q": "The diameter code updates `diameter = max(diameter, l + r)` at **every** node instead of returning `height(root.left) + height(root.right)`. Why is checking every node both necessary and enough?",
+      "code": "int depth(TreeNode n) {\n    if (n == null) return 0;\n    int l = depth(n.left), r = depth(n.right);\n    diameter = Math.max(diameter, l + r);\n    return 1 + Math.max(l, r);\n}",
+      "options": [
+        "Every path bends at exactly one highest node, and at that node its length is at most l + r",
+        "The longest path always passes through the root; checking every node only guards against null children",
+        "At a node, l + r counts the edges in its whole subtree, so the maximum finds the largest subtree",
+        "It is an optimisation: the root-only formula gives the same answer but takes O(n²) time"
+      ],
+      "answer": 0,
+      "why": "Any path in a tree climbs from one endpoint to a single highest node and then descends to the other endpoint. At that highest node it uses at most one downward branch on each side, so its length is at most `depth(left) + depth(right)` there, and that length is actually reached. Taking the max of l + r over all nodes therefore covers every possible bend point, and each node's l + r comes for free from the heights the recursion already computes.\n\nThe root-only formula is wrong, not just slow, when the longest path stays inside one subtree: for `[1,2,null,3,4,5,null,null,6]` it gives 3 + 0 = 3, while 5 → 3 → 2 → 4 → 6 has 4 edges and never touches the root.\n\nTakeaway: 'path anywhere in the tree' problems (diameter, max path sum) are a postorder that updates a global answer at each bend and returns one branch upward, O(n) total."
+    },
+    {
+      "q": "Morris inorder traversal runs an inner `while` loop to find each node's inorder predecessor. What is its total running time for a tree with n nodes?",
+      "code": "TreeNode cur = root;\nwhile (cur != null) {\n    if (cur.left == null) { res.add(cur.val); cur = cur.right; continue; }\n    TreeNode pred = cur.left;\n    while (pred.right != null && pred.right != cur) pred = pred.right;\n    if (pred.right == null) { pred.right = cur; cur = cur.left; }\n    else { pred.right = null; res.add(cur.val); cur = cur.right; }\n}",
+      "options": [
+        "O(n log n): each predecessor search walks about log n nodes",
+        "O(n·h): any predecessor search can be up to h nodes long",
+        "O(n²): on a skewed tree every predecessor search walks O(n)",
+        "O(n): every edge is walked only a constant number of times"
+      ],
+      "answer": 3,
+      "why": "The predecessor search for `cur` walks the right spine of `cur.left`. Each such right edge belongs to exactly one search (the one started from the node whose left subtree it sits in), and that search runs exactly twice: once to create the thread and once to remove it. So across the whole traversal each edge is walked at most about three times, which is O(n), with O(1) extra space.\n\nO(n·h) multiplies the worst single search by n, but the searches cover disjoint sets of edges, so their total is at most n. A skewed tree is actually cheap: with only left children every predecessor is found in one step, and with only right children there are no searches at all.\n\nTakeaway: Morris gets O(n) time and O(1) space by temporarily pointing the predecessor's null `right` back to `cur`. It must run to completion so every thread is removed and the tree is restored."
+    },
+    {
+      "q": "To count the nodes of a **complete** binary tree, this code compares the leftmost and rightmost depths and uses `2^h - 1` when they match. What is its time complexity?",
+      "code": "int countNodes(TreeNode root) {\n    if (root == null) return 0;\n    int lh = 0, rh = 0;\n    for (TreeNode n = root; n != null; n = n.left) lh++;\n    for (TreeNode n = root; n != null; n = n.right) rh++;\n    if (lh == rh) return (1 << lh) - 1;        // perfect tree\n    return 1 + countNodes(root.left) + countNodes(root.right);\n}",
+      "options": [
+        "O(log n)",
+        "O(log² n)",
+        "O(n)",
+        "O(√n)"
+      ],
+      "answer": 1,
+      "why": "Each call spends O(log n) walking two spines. In a complete tree, at least one of the two children's subtrees is perfect, so that child's call returns right after its spine walks; only one child per level can keep recursing. That is O(log n) levels, each doing O(log n) work: O(log² n). For n = 1,000,000 that is under a thousand pointer steps instead of a million.\n\nO(n) is the plain DFS count; it would only happen if the recursion visited every node, but every perfect subtree is answered by the formula without being entered. O(log n) forgets that each of those levels pays O(log n) for its own spine walks.\n\nTakeaway: using the shape guarantee (complete means one side is always perfect) turns a linear count into O(log² n)."
+    },
+    {
+      "q": "How many different binary trees have preorder `[1, 2, 3]` **and** postorder `[3, 2, 1]`?",
+      "options": [
+        "Exactly 1",
+        "Exactly 2",
+        "Exactly 4",
+        "Exactly 5"
+      ],
+      "answer": 2,
+      "why": "Preorder starts with 1, 2 and postorder ends with 2, 1, so 1 is the root and 2 is its only child; by the same argument 3 is 2's only child. The tree is a chain 1 → 2 → 3. But neither traversal says whether a single child hangs on the left or the right, because both choices give the same preorder and postorder. Two independent left/right choices give 2 × 2 = 4 trees.\n\n'Exactly 1' assumes any two traversals pin the tree down. That only holds when one of them is inorder, because inorder is what separates left from right: with preorder `[1, 2, 3]` and inorder `[2, 3, 1]`, exactly one tree matches. 5 is the number of 3-node shapes, without using the traversals at all.\n\nTakeaway: a unique tree needs inorder plus one of preorder, postorder or level order (with distinct values). Preorder + postorder is only enough for full binary trees, where no node has a single child."
+    }
+  ]
+}

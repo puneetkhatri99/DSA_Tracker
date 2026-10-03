@@ -1,23 +1,21 @@
 import { FireIcon } from '@phosphor-icons/react';
 import { Fragment, useLayoutEffect, useRef, useState, type MouseEvent } from 'react';
 import { QuestionRow } from '../components/QuestionRow';
-import { DAILY_NEW, activity, addDays, daysUntil, essential, isDue, streakOf, today, topicStats, type Question, type TopicStat } from '../lib';
+import { DAILY_NEW, activity, addDays, daysUntil, essential, isDue, monthsUpTo, streakOf, today, topicStats, type Question, type TopicStat } from '../lib';
 import { useStore } from '../store';
 
-const WEEKS = 53;
 const fmt = (d: string, o: Intl.DateTimeFormatOptions) => new Date(d + 'T00:00').toLocaleDateString('en-US', o);
 const solves = (n: number) => `${n} ${n === 1 ? 'solve or review' : 'solves and reviews'}`;
+const level = (n: number) => (n >= 6 ? 4 : n >= 4 ? 3 : n >= 2 ? 2 : n ? 1 : 0);
 
-// A year of activity, GitHub style: one column per week (Sunday on top), month names above, hover for the day.
+// A year of activity in month blocks: one column per week of the month (Sunday on top), hover for the day.
 function Calendar({ counts }: { counts: Record<string, number> }) {
   const card = useRef<HTMLDivElement>(null), scroller = useRef<HTMLDivElement>(null);
   const [tip, setTip] = useState<{ x: number; y: number; align: string; text: string } | null>(null);
-  useLayoutEffect(() => { scroller.current!.scrollLeft = scroller.current!.scrollWidth; }, []); // phones start at this week
+  useLayoutEffect(() => { scroller.current!.scrollLeft = scroller.current!.scrollWidth; }, []); // phones start at this month
 
-  const days: string[] = [];
-  for (let d = addDays(today(), -(WEEKS - 1) * 7 - new Date().getDay()); d <= today(); d = addDays(d, 1)) days.push(d);
-  const months = days.flatMap((d, i) => (i === 0 || d.endsWith('-01') ? [{ col: Math.floor(i / 7), label: fmt(d, { month: 'short' }) }] : []));
-  if (months.length > 1 && months[1].col - months[0].col < 3) months.shift(); // a partial first month would overlap the next label
+  const months = monthsUpTo(today());
+  const days = months.flatMap(m => m.days);
   let total = 0, active = 0, run = 0, best = 0;
   for (const d of days) {
     const n = counts[d] || 0;
@@ -43,10 +41,21 @@ function Calendar({ counts }: { counts: Record<string, number> }) {
       </div>
       <div className="cal-scroll" ref={scroller}>
         <div className="cal-grid" role="img" aria-label={`${solves(total)} in the past year, on ${active} days`}>
-          <div className="cal-months">{months.map(m => <span key={m.col} style={{ gridColumn: `${m.col + 1} / span 3` }}>{m.label}</span>)}</div>
-          <div className="cal-days"><span /><span>Mon</span><span /><span>Wed</span><span /><span>Fri</span><span /></div>
-          <div className="cal-cells" onMouseOver={show} onMouseLeave={() => setTip(null)}>
-            {days.map(d => { const n = counts[d] || 0; return <i key={d} data-date={d} className={`l${n >= 6 ? 4 : n >= 4 ? 3 : n >= 2 ? 2 : n ? 1 : 0}`} />; })}
+          <div className="cal-days"><div><span /><span>Mon</span><span /><span>Wed</span><span /><span>Fri</span><span /></div><b className="cal-label" /></div>
+          <div className="cal-months" onMouseOver={show} onMouseLeave={() => setTip(null)}>
+            {months.map(m => {
+              const cols = Math.ceil((m.pad + m.days.length) / 7), sum = m.days.reduce((s, d) => s + (counts[d] || 0), 0);
+              return (
+                // width = cols × day + (cols − 1) × 3px gap, so every month's days come out the same size
+                <div key={m.first} className="cal-month" style={{ flex: `${cols} 1 ${(cols - 1) * 3}px` }}>
+                  <div className="cal-cells" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
+                    {Array.from({ length: m.pad }, (_, i) => <i key={i} className="pad" />)}
+                    {m.days.map(d => <i key={d} data-date={d} className={`l${level(counts[d] || 0)}`} />)}
+                  </div>
+                  <b className="cal-label" title={`${solves(sum)} in ${fmt(m.first, { month: 'long', year: 'numeric' })}`}>{fmt(m.first, { month: 'short' })}</b>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -62,9 +71,10 @@ export default function Today() {
   const flow = learn.topics.filter(t => !t.optional).flatMap(t => t.questions).filter(q => essential(q, filters));
   const solvedToday = flow.filter(q => st(q.id).done === today());
   const left = flow.filter(q => !st(q.id).done);
-  const target = meta.target, days = target ? daysUntil(target) + 1 : 0;
+  const target = meta.target, days = target ? daysUntil(target) + 1 : 0;   // today and the finish day both count
+  // A finish date of today or earlier leaves nothing to spread out (it used to put every question left on today's list).
   // Pace is worked out from the start of the day, so the list does not grow as you tick things off.
-  const perDay = days > 0 ? Math.ceil((left.length + solvedToday.length) / days) : DAILY_NEW;
+  const perDay = days > 1 ? Math.ceil((left.length + solvedToday.length) / days) : DAILY_NEW;
   const fresh = [...solvedToday, ...left.slice(0, Math.max(0, perDay - solvedToday.length))];
   const due = Object.values(byId).filter(({ q }) => isDue(st(q.id))).map(({ q }) => q);
   const statsOf: Record<string, Record<string, TopicStat>> = {};
@@ -81,8 +91,11 @@ export default function Today() {
         <h1>Today</h1>
         <span className={`streak ${streak ? 'on' : ''}`}><FireIcon />{streak ? `${streak}-day streak` : 'Solve or review something to start a streak'}</span>
       </div>
-      <p className="pace"><label>Finish the {learn.title} by <input type="date" id="target" value={target || ''} min={today()} onChange={e => setMeta({ target: e.target.value })} /></label>
-        <span>{days > 0 ? `${left.length} left, so ${perDay} new a day.` : target ? 'That date has passed. Pick a new one.' : `No date set, so ${DAILY_NEW} new a day.`}{filters.tier ? ' Essentials only.' : ''}</span></p>
+      <p className="pace"><label>Finish the {learn.title} by <input type="date" id="target" value={target || ''} min={addDays(today(), 1)}
+        onChange={e => setMeta({ target: e.target.value || undefined })} /></label>{/* cleared → no date; the API rejects '' */}
+        <span>{days > 1 ? `${left.length} left, so ${perDay} new a day.`
+          : target ? `${days === 1 ? 'That is today' : 'That date has passed'}. Pick a later date; until then ${DAILY_NEW} new a day.`
+          : `No date set, so ${DAILY_NEW} new a day.`}{filters.tier ? ' Essentials only.' : ''}</span></p>
     </section>
     <section className="day">
       <h2>Reviews due <span>{due.length}</span></h2>

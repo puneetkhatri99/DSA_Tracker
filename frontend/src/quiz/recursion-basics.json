@@ -1,0 +1,185 @@
+{
+  "easy": [
+    {
+      "q": "A recursive Java method has no base case that is ever reached, e.g. `int f(int n) { return f(n - 1) + 1; }`. What happens when you call it?",
+      "options": [
+        "It loops forever without using more memory, like `while (true)`",
+        "The compiler rejects it, since a recursive method needs a base case",
+        "Each call pushes a stack frame until the JVM throws `StackOverflowError`",
+        "Frames fill the heap until the JVM throws `OutOfMemoryError`"
+      ],
+      "answer": 2,
+      "why": "Every call gets its own frame on the thread's call stack (parameters, locals, return address), and a frame is freed only when its call returns. With no reachable base case nothing ever returns, so frames pile up until the stack (typically 512 KB to 1 MB) is exhausted and Java throws `StackOverflowError`.\n\nIt is not `OutOfMemoryError`: frames live on the thread stack, not the heap. And the compiler does not check for base cases at all.\n\n**Takeaway:** write the base case first, and make sure every recursive call moves toward it."
+    },
+    {
+      "q": "What does `f(3)` print?",
+      "code": "void f(int n) {\n    if (n == 0) return;\n    f(n - 1);\n    System.out.print(n + \" \");\n}",
+      "options": [
+        "1 2 3",
+        "3 2 1",
+        "0 1 2 3",
+        "3 2 1 0"
+      ],
+      "answer": 0,
+      "why": "The print comes **after** the recursive call. f(3) calls f(2), which calls f(1), which calls f(0), and f(0) returns at the base case without printing. Only then do the waiting calls resume, innermost first: f(1) prints 1, f(2) prints 2, f(3) prints 3.\n\n\"3 2 1\" is what you get when the print is placed *before* the call.\n\n**Takeaway:** work before the recursive call runs on the way down; work after it runs on the way back up, in reverse order of the calls."
+    },
+    {
+      "q": "What are the time and extra space complexities of this method for input n ≥ 0?",
+      "code": "int sum(int n) {\n    if (n == 0) return 0;\n    return n + sum(n - 1);\n}",
+      "options": [
+        "O(n) time and O(1) space, since no array is allocated",
+        "O(n) time and O(n) space for the call stack",
+        "O(n²) time, since each call waits for all the calls below it",
+        "O(log n) time and O(log n) space, since n shrinks every call"
+      ],
+      "answer": 1,
+      "why": "There are n + 1 calls (n, n − 1, ..., 0), each doing O(1) work apart from the recursive call, so time is O(n). All of them are on the stack at the same moment (sum(n) is still waiting when sum(0) runs), so the stack is n + 1 frames deep: O(n) space.\n\nThe tempting O(1) forgets that the call stack is memory too; it is why this method throws `StackOverflowError` for n = 1,000,000 while the equivalent loop does not. Waiting is not extra work, so it is not O(n²).\n\n**Takeaway:** time = number of calls × work per call; space = maximum recursion depth."
+    },
+    {
+      "q": "With the naive Fibonacci below, how many calls are made in total for `fib(4)`, counting the first call?",
+      "code": "int fib(int n) {\n    if (n <= 1) return n;\n    return fib(n - 1) + fib(n - 2);\n}",
+      "options": [
+        "5",
+        "7",
+        "16",
+        "9"
+      ],
+      "answer": 3,
+      "why": "Draw the tree: fib(4) → fib(3), fib(2); fib(3) → fib(2), fib(1); each fib(2) → fib(1), fib(0). Level by level that is 1 + 2 + 4 + 2 = 9 calls, with fib(2) computed twice and fib(1) called three times.\n\nThe tempting 5 counts each distinct n once, which is what memoisation would give. 16 = 2⁴ assumes a full binary tree, but the fib(n − 2) branch is shorter.\n\n**Takeaway:** naive Fibonacci makes 2·fib(n + 1) − 1 calls, roughly 1.618ⁿ, because it recomputes the same subproblems; a memo array cuts it to O(n)."
+    },
+    {
+      "q": "Which base case makes this recursive `factorial(n)` correct for every n ≥ 0, including 0 and 1?",
+      "code": "long factorial(int n) {\n    // base case goes here\n    return n * factorial(n - 1);\n}",
+      "options": [
+        "`if (n == 1) return 1;`",
+        "`if (n == 0) return 0;`",
+        "`if (n <= 1) return 1;`",
+        "`if (n <= 1) return n;`"
+      ],
+      "answer": 2,
+      "why": "0! and 1! are both 1, so `if (n <= 1) return 1;` stops correctly at both.\n\n`n == 1` alone breaks for n = 0: it calls factorial(-1), factorial(-2), ... and never reaches the base case, ending in `StackOverflowError`. Returning 0 at n == 0 makes every product 0, and `return n` makes 0! = 0.\n\n**Takeaway:** test a base case against the smallest legal inputs (here 0 and 1), not just the typical ones."
+    }
+  ],
+  "medium": [
+    {
+      "q": "What does `isSorted(new int[]{1, 3, 2}, 0)` return?",
+      "code": "boolean isSorted(int[] a, int i) {\n    if (i >= a.length - 1) return true;\n    if (a[i] > a[i + 1]) return false;\n    isSorted(a, i + 1);\n    return true;\n}",
+      "options": [
+        "`false`, because the call with i = 1 finds 3 > 2",
+        "`true`, because the recursive call's result is thrown away",
+        "It throws ArrayIndexOutOfBoundsException at the last index",
+        "It does not compile, because a path has no return statement"
+      ],
+      "answer": 1,
+      "why": "The call with i = 1 does find 3 > 2 and returns false, but its caller (i = 0) ignores that value and goes on to `return true`, so the false never reaches the top. It compiles, since every path ends in a return; the bug is the dropped result. The index is safe because the base case stops at i = a.length − 1.\n\nThe fix is `return isSorted(a, i + 1);`.\n\n**Takeaway:** in functional recursion the answer must be passed back up through every level, so always use the recursive call's return value."
+    },
+    {
+      "q": "This recursive palindrome check passes a shorter copy of the string to each call. What is its time complexity for a string of length n?",
+      "code": "boolean isPal(String s) {\n    if (s.length() <= 1) return true;\n    if (s.charAt(0) != s.charAt(s.length() - 1)) return false;\n    return isPal(s.substring(1, s.length() - 1));\n}",
+      "options": [
+        "O(n), since each call compares only two characters",
+        "O(n log n), since the string shrinks from both ends every call",
+        "O(n), since `substring` shares the original string's characters",
+        "O(n²), since each call copies a substring of up to n characters"
+      ],
+      "answer": 3,
+      "why": "There are about n/2 calls, but in modern Java `substring` builds a brand-new String, copying n − 2, then n − 4, ... characters. That sums to about n²/4, so O(n²) time, and since every waiting frame still holds its copy, O(n²) memory too.\n\n\"Substring shares the characters\" was true only in old Java 6; it no longer holds. Counting only the two comparisons per call misses the hidden copy.\n\n**Takeaway:** in recursion over strings or arrays, pass indices instead of copies: `isPal(s, i)` comparing `s.charAt(i)` with `s.charAt(n - 1 - i)` is O(n) time."
+    },
+    {
+      "q": "What is `a` after calling `reverse(a, 0)` on `a = {1, 2, 3, 4}`?",
+      "code": "void reverse(int[] a, int i) {\n    int n = a.length;\n    if (i > n / 2) return;\n    int t = a[i];\n    a[i] = a[n - 1 - i];\n    a[n - 1 - i] = t;\n    reverse(a, i + 1);\n}",
+      "options": [
+        "[4, 3, 2, 1]",
+        "[4, 2, 3, 1]",
+        "[1, 2, 3, 4]",
+        "[1, 3, 2, 4]"
+      ],
+      "answer": 1,
+      "why": "n / 2 = 2, and the base case `i > 2` lets calls run for i = 0, 1 **and 2**. i = 0 swaps a[0], a[3] → [4, 2, 3, 1]; i = 1 swaps a[1], a[2] → [4, 3, 2, 1], fully reversed; then i = 2 swaps a[2] with a[1] again → [4, 2, 3, 1].\n\nThe base case should be `i >= n / 2`, since the first half is indices 0..n/2 − 1. For odd n the extra call swaps the middle element with itself, which hides the bug: {1, 2, 3, 4, 5} comes out correctly.\n\n**Takeaway:** test boundary conditions on both an even and an odd length."
+    },
+    {
+      "q": "This `pow` halves n on each call but calls itself twice instead of storing the half result. What is its time complexity for n ≥ 0?",
+      "code": "double pow(double x, int n) {\n    if (n == 0) return 1;\n    if (n % 2 == 0) return pow(x, n / 2) * pow(x, n / 2);\n    return x * pow(x, n / 2) * pow(x, n / 2);\n}",
+      "options": [
+        "O(n), since the calls double on each of the log n levels",
+        "O(log n), since n is halved on every call, so the depth is log n",
+        "O(n log n), since there are log n levels with n work each",
+        "O(2ⁿ), since every single call makes two more recursive calls"
+      ],
+      "answer": 0,
+      "why": "The depth is only about log₂ n, but each call spawns two, so level k has 2ᵏ calls and the deepest level has about 2^(log₂ n) = n. Summing 1 + 2 + 4 + ... + n gives a few times n calls (n = 1024 makes 4095), so O(n), no better than a plain loop.\n\nO(2ⁿ) would need depth n with two calls per level; here the depth is log n. Storing `double half = pow(x, n / 2);` and returning `half * half` makes one call per level: O(log n).\n\n**Takeaway:** count calls as branching^depth, not just the branching or the depth alone."
+    },
+    {
+      "q": "What does `g(3)` print?",
+      "code": "void g(int n) {\n    if (n == 0) return;\n    System.out.print(n + \" \");\n    g(n - 1);\n    System.out.print(n + \" \");\n}",
+      "options": [
+        "3 2 1 3 2 1",
+        "3 3 2 2 1 1",
+        "3 2 1 1 2 3",
+        "1 2 3 3 2 1"
+      ],
+      "answer": 2,
+      "why": "The first print runs on the way down: g(3), g(2), g(1) each print before calling deeper, giving 3 2 1. g(0) returns immediately, then each call does its second print on the way back up, innermost first: 1, 2, 3.\n\n\"3 2 1 3 2 1\" assumes the second prints run in call order, but a call can only resume after everything below it has returned, so they come out reversed.\n\n**Takeaway:** the call stack is last-in, first-out; code after the recursive call runs in reverse order of the calls, which is the backbone of backtracking."
+    }
+  ],
+  "hard": [
+    {
+      "q": "Two recursive ways to sum an array of n ints: **A** returns `a[i] + sum(a, i + 1)`; **B** splits `[lo, hi]` at the middle and returns `sum(lo, mid) + sum(mid + 1, hi)`. How do they compare?",
+      "options": [
+        "A takes O(n) time, but B takes O(n log n) since it has log n levels",
+        "A takes O(n) time, but B takes O(2ⁿ) since it makes two calls per call",
+        "Both take O(n) time and both need O(n) stack depth",
+        "Both take O(n) time; A needs O(n) stack depth, B only O(log n)"
+      ],
+      "answer": 3,
+      "why": "B's recursion tree has n leaves (one per element) and n − 1 inner nodes, each doing O(1) work, so it is O(n) time like A. The difference is depth: A keeps a chain of n waiting frames, while B halves the range each level, so only about log₂ n frames are on the stack at once.\n\nIn Java this matters: on n = 1,000,000, A throws `StackOverflowError`, while B finishes with a depth of 21. O(n log n) would need each call to do work proportional to its range (like merge sort's merge); B does O(1) per call. O(2ⁿ) would need depth n.\n\n**Takeaway:** two calls per level is exponential only when the depth is linear; halving keeps the total work linear and the stack shallow."
+    },
+    {
+      "q": "`int factorial(int n)` is the usual recursion `n <= 1 ? 1 : n * factorial(n - 1)`. What does `factorial(13)` return? (13! = 6,227,020,800.)",
+      "options": [
+        "6227020800, since Java widens the product automatically",
+        "1932053504, a wrong positive number, with no error",
+        "A negative number, since overflow always makes an int negative",
+        "It throws ArithmeticException, since 13! exceeds Integer.MAX_VALUE"
+      ],
+      "answer": 1,
+      "why": "12! = 479,001,600 fits in an int, but 13 × 479,001,600 = 6,227,020,800 exceeds 2,147,483,647 and wraps modulo 2³²: 6,227,020,800 − 4,294,967,296 = 1,932,053,504.\n\nJava int multiplication never throws and never widens, and a wrapped value can be positive, so checking the sign would not catch it (17! happens to come out negative, 13! does not).\n\n**Takeaway:** int holds factorials only up to 12! and long up to 20!; beyond that use `BigInteger`, or take the modulus at every step when the problem asks for one."
+    },
+    {
+      "q": "This `pow(x, n)` handles negative exponents by flipping the sign. What happens on `pow(2.0, Integer.MIN_VALUE)`?",
+      "code": "double pow(double x, int n) {\n    if (n == 0) return 1;\n    if (n < 0) return 1 / pow(x, -n);\n    double half = pow(x, n / 2);\n    return n % 2 == 0 ? half * half : half * half * x;\n}",
+      "options": [
+        "`StackOverflowError`, because `-n` is still `Integer.MIN_VALUE`",
+        "It returns 0.0, since 2^-2147483648 underflows to zero",
+        "It returns Infinity, since 2^2147483648 overflows a double",
+        "`ArithmeticException`, since negating MIN_VALUE overflows"
+      ],
+      "answer": 0,
+      "why": "The int range is -2147483648..2147483647, so `-Integer.MIN_VALUE` wraps back to `Integer.MIN_VALUE`. The `n < 0` branch therefore calls itself with the same negative n forever, and the stack overflows. No `ArithmeticException` is thrown, since plain int negation never throws.\n\n0.0 is the expected answer, and you get it after a fix: widen first with `long N = n; if (N < 0) { x = 1 / x; N = -N; }`, then recurse on the long N.\n\n**Takeaway:** whenever you negate or `abs` an int input, ask what happens at `Integer.MIN_VALUE`."
+    },
+    {
+      "q": "What does this program print?",
+      "code": "static int count = 0;\n\nstatic int countDigits(int n) {\n    if (n == 0) return count;\n    count++;\n    return countDigits(n / 10);\n}\n\npublic static void main(String[] args) {\n    System.out.println(countDigits(123) + \" \" + countDigits(45));\n}",
+      "options": [
+        "3 2",
+        "5 2",
+        "5 5",
+        "3 5"
+      ],
+      "answer": 3,
+      "why": "`count` is a static field shared by every call, and nothing resets it. countDigits(123) increments it 3 times and returns 3. Java evaluates `+` operands left to right, so countDigits(45) runs next, continues from 3, and returns 5.\n\nEach return value is a copy of `count` at that moment, so the first number stays 3 rather than becoming 5, and \"5 2\" would need right-to-left evaluation.\n\n**Takeaway:** keep recursive state in parameters or return values, or reset globals before each top-level call; a stale static is the classic \"passes the first test case, fails the second\" bug."
+    },
+    {
+      "q": "This sum is tail recursive: nothing is left to do after the recursive call. In Java, with the default JVM settings, what happens on `sum(1_000_000, 0)`?",
+      "code": "static long sum(int i, long acc) {\n    if (i < 1) return acc;\n    return sum(i - 1, acc + i);\n}",
+      "options": [
+        "It returns 500000500000, since the JIT turns tail calls into a loop",
+        "It returns 500000500000, since each frame is popped before the next call",
+        "It throws `StackOverflowError`, since Java does not eliminate tail calls",
+        "It returns a wrong value, since `acc + i` overflows"
+      ],
+      "answer": 2,
+      "why": "Some compilers (Scala's `@tailrec`, Kotlin's `tailrec`) rewrite self tail calls into loops, but javac and the JVM do not. Each call still pushes a frame, and a depth of a million overflows the default stack, even after the JIT has warmed up.\n\nA frame cannot be popped before the call it is waiting on returns, even if it only passes the value along. Overflow of the sum is not the issue: `acc` is a long and 500,000,500,000 fits easily.\n\n**Takeaway:** in Java, recursion depth is limited to roughly 1e4 to 1e5 frames by default, tail position or not; for deep linear recursion, write a loop."
+    }
+  ]
+}

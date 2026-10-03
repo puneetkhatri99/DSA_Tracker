@@ -1,0 +1,182 @@
+{
+  "easy": [
+    {
+      "q": "This removes duplicates from a **sorted** array in place and returns the number of unique values `k`. For `a = [1, 1, 2, 2, 2, 3]`, what does the whole array `a` look like after it runs?",
+      "code": "int k = 1;\nfor (int i = 1; i < a.length; i++) {\n    if (a[i] != a[k - 1]) {\n        a[k] = a[i];\n        k++;\n    }\n}\nreturn k;",
+      "options": [
+        "[1, 2, 3, 0, 0, 0]",
+        "[1, 2, 3]",
+        "[1, 2, 3, 2, 2, 3]",
+        "[1, 2, 3, 3, 3, 3]"
+      ],
+      "answer": 2,
+      "why": "`a[0..k-1]` is always the deduplicated prefix, and `a[k - 1]` is the last value kept. A value is copied to `a[k]` only when it differs from that last kept value: index 2 (value 2) goes to `a[1]` and index 5 (value 3) goes to `a[2]`, so `a` becomes `[1, 2, 3, 2, 2, 3]` and the method returns `k = 3`.\n\nNothing clears or shrinks the array: Java arrays have a fixed length, and the slots after `k` keep their old values, so neither `[1, 2, 3]` nor `[1, 2, 3, 0, 0, 0]` is possible. Comparing only with the last kept value works because the array is sorted, so equal values are next to each other.\n\nTakeaway: an in-place two-pointer answer is \"the first `k` slots\"; whatever lies beyond `k` is leftover the caller must ignore."
+    },
+    {
+      "q": "This left-rotates `a = [1, 2, 3, 4, 5]` by `k = 7` places with the reversal trick. What is `a` afterwards?",
+      "code": "int n = a.length;\nk %= n;\nreverse(a, 0, k - 1);     // reverse(a, l, r) reverses a[l..r] in place\nreverse(a, k, n - 1);\nreverse(a, 0, n - 1);",
+      "options": [
+        "[3, 4, 5, 1, 2]",
+        "[4, 5, 1, 2, 3]",
+        "[2, 1, 5, 4, 3]",
+        "[1, 2, 3, 4, 5]"
+      ],
+      "answer": 0,
+      "why": "Rotating by 7 is the same as rotating by `7 % 5 = 2`, because every 5 rotations bring the array back to the start. With `k = 2`: reversing `a[0..1]` gives `[2, 1, 3, 4, 5]`, reversing `a[2..4]` gives `[2, 1, 5, 4, 3]`, and reversing everything gives `[3, 4, 5, 1, 2]`: the first two elements moved to the end.\n\n`[4, 5, 1, 2, 3]` is a **right** rotation by 2 (reverse the whole array first, then the two parts). `[2, 1, 5, 4, 3]` is the state before the final full reverse, and `[1, 2, 3, 4, 5]` is the classic bug of writing `n % k` (5 % 7 = 5, a full turn) instead of `k % n`.\n\nTakeaway: always reduce `k %= n` first (and guard `n == 0`); the reversal algorithm then rotates in O(n) time and O(1) extra space."
+    },
+    {
+      "q": "An element is a **leader** if it is strictly greater than every element to its right (the last element always is). Which approach finds all leaders most efficiently?",
+      "options": [
+        "Scan from left to right, keeping the running maximum: O(n) time, O(1) extra space",
+        "Sort a copy in descending order and keep the largest values: O(n log n) time",
+        "For each element, check every element to its right: O(n²) time, O(1) extra space",
+        "Scan from right to left, keeping the maximum seen so far: O(n) time, O(1) extra space"
+      ],
+      "answer": 3,
+      "why": "Whether `a[i]` is a leader depends only on the maximum of `a[i+1..n-1]`, and walking from the right that maximum is exactly what you have been tracking. For `[16, 17, 4, 3, 5, 2]` the scan sees 2 (leader), 5 (> 2, leader), 3 and 4 (not > 5), 17 (leader) and 16 (not > 17), so the leaders are `[17, 5, 2]` once the collected list is reversed.\n\nA left-to-right running maximum answers a different question (greater than everything to the **left**). Sorting throws away positions, and positions are what \"to its right\" is about. The nested-loop check is correct but O(n²).\n\nTakeaway: when a condition looks at \"everything to the right\", scan from the right and carry a summary (here the max) of what you have passed."
+    },
+    {
+      "q": "`nums` holds `n` distinct numbers taken from `0..n`, so exactly one value is missing. Why does XOR-ing every index `0..n` together with every element of `nums` leave exactly the missing number?",
+      "options": [
+        "XOR adds numbers without carries, so the result equals n(n+1)/2 minus the sum of nums",
+        "Present values appear twice and cancel (x ^ x = 0), leaving only the missing value",
+        "XOR keeps the largest value it has seen, and the missing value is the largest gap",
+        "The XOR of 0..n is always n, so XOR-ing in the elements subtracts each of them from n"
+      ],
+      "answer": 1,
+      "why": "XOR is commutative and associative, `x ^ x = 0` and `x ^ 0 = x`, so order does not matter and every value that occurs twice disappears. Each present value occurs once as an index and once as an element; the missing value occurs only as an index. For `nums = [3, 0, 1]` (n = 3): `(0 ^ 1 ^ 2 ^ 3) ^ (3 ^ 0 ^ 1) = 2`.\n\nXOR is bitwise addition **without carries**, which is not ordinary addition (`1 ^ 1 = 0` while `1 + 1 = 2`), so it does not reproduce the sum formula, and the XOR of `0..n` is not always `n` (`0 ^ 1 ^ 2 ^ 3 = 0`). The sum formula `n(n+1)/2 - sum` is a valid alternative, but in `int` it can overflow for large `n`, so compute it in `long`; XOR never overflows.\n\nTakeaway: when every value appears in pairs except one, think XOR (Missing Number, Single Number)."
+    },
+    {
+      "q": "Moore's voting algorithm is run on `a = [2, 2, 1, 1, 3]`, which has **no** majority element (nothing appears more than n/2 times). What does this code return?",
+      "code": "int cand = 0, cnt = 0;\nfor (int x : a) {\n    if (cnt == 0) cand = x;\n    cnt += (x == cand) ? 1 : -1;\n}\nreturn cand;",
+      "options": [
+        "2",
+        "1",
+        "3",
+        "-1"
+      ],
+      "answer": 2,
+      "why": "Trace it: 2 becomes the candidate (cnt 1), the second 2 makes cnt 2, the two 1s cancel it back to 0, and then 3 becomes the new candidate with cnt 1. So it returns `3`, a value that appears only once.\n\nThe algorithm pairs off different values. A true majority (> n/2) can never be fully cancelled, so it is guaranteed to survive; without one, the survivor is just whatever was left, which is why 2 (the first and joint most frequent value) is not returned. The code has no `-1` path at all.\n\nTakeaway: Moore's voting only produces a candidate. Unless the problem guarantees a majority, do a second pass that counts it and checks `count > n / 2`."
+    }
+  ],
+  "medium": [
+    {
+      "q": "This max-subarray-sum code passes most tests (the subarray must be non-empty). What does it return for `a = [-3, -1, -2]`?",
+      "code": "int cur = 0, best = 0;\nfor (int x : a) {\n    cur = Math.max(x, cur + x);\n    best = Math.max(best, cur);\n}\nreturn best;",
+      "options": [
+        "-1",
+        "0",
+        "-3",
+        "-6"
+      ],
+      "answer": 1,
+      "why": "`best` starts at 0, which acts like a fake empty subarray. Every real subarray here has a negative sum (the best one is `[-1]`), so `Math.max(best, cur)` never replaces the 0 and the method returns `0`.\n\nThe correct answer is -1, which you get by starting from the first element:\n```java\nint cur = a[0], best = a[0];\nfor (int i = 1; i < a.length; i++) {\n    cur = Math.max(a[i], cur + a[i]);\n    best = Math.max(best, cur);\n}\n```\n-3 (the first element) and -6 (the whole array) are real subarray sums, but neither can beat a `best` of 0.\n\nTakeaway: initialise Kadane from `a[0]` (or `Integer.MIN_VALUE`) when the subarray must be non-empty, and always test an all-negative array."
+    },
+    {
+      "q": "In the Dutch national flag sort (0s, 1s and 2s in one pass), when `a[mid] == 2` the code swaps with `high` and decrements `high` but does **not** move `mid`. Why?",
+      "code": "int low = 0, mid = 0, high = a.length - 1;\nwhile (mid <= high) {\n    if (a[mid] == 0) swap(a, low++, mid++);\n    else if (a[mid] == 1) mid++;\n    else swap(a, mid, high--);\n}",
+      "options": [
+        "After the swap a[mid] is guaranteed to be a 1, which is already in the right place",
+        "Moving mid here would let it pass low, which would break the region of 0s",
+        "It keeps the sort stable, so equal values stay in their original order",
+        "The value swapped in from high has not been examined yet, so it could be a 0, 1 or 2"
+      ],
+      "answer": 3,
+      "why": "The invariant is: `a[0..low-1]` are 0s, `a[low..mid-1]` are 1s, `a[mid..high]` is unexamined and `a[high+1..]` are 2s. The element that arrives at `mid` from `high` comes from the unexamined region, so it must be checked on the next iteration. When `a[mid] == 0` it is safe to advance both pointers, because the value coming from `low` is a 1 that was already examined (or `low == mid`).\n\nWith the bug `swap(a, mid++, high--)`, `[1, 2, 0]` ends as `[1, 0, 2]`: the 0 swapped in from the end is skipped. Nothing guarantees the incoming value is a 1, `mid` is always at least `low` anyway, and the algorithm is not stable, so stability is not the reason.\n\nTakeaway: when you swap in a value from the unknown region, examine it before moving on."
+    },
+    {
+      "q": "An array has equally many positive and negative numbers. Rearrange it so signs alternate starting with a positive, **keeping the original order** among positives and among negatives (`[3, 1, -2, -5, 2, -4]` → `[3, -2, 1, -5, 2, -4]`). Which approach is both correct and O(n)?",
+      "options": [
+        "New array: positives go to indices 0, 2, 4, ..., negatives to 1, 3, 5, ..., in reading order",
+        "In place: whenever a slot has the wrong sign, swap it with the next element of the right sign",
+        "Partition by sign with a Dutch-national-flag pass, then interleave the two halves",
+        "Sort with a comparator that puts positives first, then interleave the two halves"
+      ],
+      "answer": 0,
+      "why": "Two write cursors (`pos = 0` and `neg = 1`, each jumping by 2) place every element exactly once, in the order it was read, so the relative order is kept. That is O(n) time and O(n) extra space, the expected answer.\n\nSwapping in place breaks the order: `[1, 2, 3, -4, -5, -6]` becomes `[1, -4, 3, -5, 2, -6]`, with the positives now in the order 1, 3, 2. A Dutch-flag partition does not preserve order either. Sorting by sign with a stable sort would keep the order, but it costs O(n log n), so it is not O(n).\n\nTakeaway: when relative order must be kept, writing into a fresh array with separate cursors is usually the simplest correct O(n) solution."
+    },
+    {
+      "q": "Set Matrix Zeroes: every 0 in the **original** matrix must turn its whole row and column into 0s. This version zeroes the row and column immediately while scanning. What does `m` look like afterwards?",
+      "code": "int[][] m = {{1, 0, 1}, {1, 1, 1}, {1, 1, 1}};\nfor (int i = 0; i < 3; i++)\n    for (int j = 0; j < 3; j++)\n        if (m[i][j] == 0) {\n            for (int c = 0; c < 3; c++) m[i][c] = 0;   // zero row i\n            for (int r = 0; r < 3; r++) m[r][j] = 0;   // zero column j\n        }",
+      "options": [
+        "[[0,0,0],[1,0,1],[1,0,1]]",
+        "[[0,0,0],[1,0,0],[1,0,0]]",
+        "[[0,0,0],[0,0,0],[0,0,0]]",
+        "[[0,0,0],[0,0,0],[1,0,1]]"
+      ],
+      "answer": 2,
+      "why": "The only original zero is `m[0][1]`, so the right answer would be `[[0,0,0],[1,0,1],[1,0,1]]`. But the scan keeps reading zeros it wrote itself: after handling `m[0][1]` it sees the new 0 at `m[0][2]` and wipes column 2, then the new 0 at `m[1][1]` wipes row 1, and `m[2][1]` wipes row 2. The zeros cascade until the whole matrix is 0.\n\nThe fix is to separate finding from writing: first record which rows and columns contain a zero (two `boolean` arrays for O(m + n) space, or row 0 and column 0 as markers for O(1) space), then zero them in a second pass.\n\nTakeaway: never let a pass read values that the same pass has already overwritten; record first, modify later."
+    },
+    {
+      "q": "This 3Sum (sort, then two pointers) skips duplicate anchors by comparing with the **next** element. What does it return for `nums = [-1, -1, 2]`?",
+      "code": "Arrays.sort(nums);\nList<List<Integer>> res = new ArrayList<>();\nfor (int i = 0; i < nums.length - 2; i++) {\n    if (nums[i] == nums[i + 1]) continue;   // skip duplicate anchor\n    int l = i + 1, r = nums.length - 1;\n    while (l < r) {\n        int s = nums[i] + nums[l] + nums[r];\n        if (s == 0) { res.add(List.of(nums[i], nums[l], nums[r])); l++; r--; }\n        else if (s < 0) l++;\n        else r--;\n    }\n}\nreturn res;",
+      "options": [
+        "[]",
+        "[[-1, -1, 2]]",
+        "[[-1, -1, 2], [-1, -1, 2]]",
+        "It throws ArrayIndexOutOfBoundsException"
+      ],
+      "answer": 0,
+      "why": "The loop only runs for `i = 0`, and since `nums[0] == nums[1]` that anchor is skipped, so nothing is found and the result is `[]`. The skipped -1 was needed: the only triplet uses both -1s, one as the anchor and one as the left partner.\n\nThe right check compares with the **previous** element: `if (i > 0 && nums[i] == nums[i - 1]) continue;`. That skips an anchor value only after the same value has already been used as an anchor with all its partners, so `[-1, -1, 2]` is found exactly once. There is no out-of-bounds access, because `i < n - 2` keeps `i + 1` inside the array.\n\nTakeaway: when deduplicating in a sorted scan, skip a value that equals one you have **already processed**, not one you are about to see."
+    }
+  ],
+  "hard": [
+    {
+      "q": "This adapts Kadane to **maximum product** subarray by tracking only the best product ending at each index. What does it return for `a = [2, 3, -2, 4, -1]`?",
+      "code": "int cur = a[0], best = a[0];\nfor (int i = 1; i < a.length; i++) {\n    cur = Math.max(a[i], cur * a[i]);\n    best = Math.max(best, cur);\n}\nreturn best;",
+      "options": [
+        "48",
+        "24",
+        "8",
+        "6"
+      ],
+      "answer": 3,
+      "why": "Trace: `cur` goes 2, 6, -2, 4, -1 and `best` stops at 6. The true answer is 48, the product of the whole array: -2 makes the running product -12, and the final -1 flips -48 back to +48. The code threw the -12 away because it only kept the maximum.\n\nWith products, the smallest (most negative) product ending here becomes the largest after one more negative number, so you must carry both:\n```java\nint hi = a[0], lo = a[0], best = a[0];\nfor (int i = 1; i < a.length; i++) {\n    int x = a[i];\n    if (x < 0) { int t = hi; hi = lo; lo = t; }\n    hi = Math.max(x, hi * x);\n    lo = Math.min(x, lo * x);\n    best = Math.max(best, hi);\n}\n```\n24 (3 · -2 · 4 · -1) and 8 (-2 · 4 · -1) are positive products too, but neither is the largest, and the buggy code never reaches them.\n\nTakeaway: a sign flip swaps max and min, so max-product needs both running values (or the prefix/suffix product trick)."
+    },
+    {
+      "q": "Counting inversions with merge sort: while merging the sorted halves `a[lo..mid]` and `a[mid+1..hi]`, whenever `a[i] > a[j]` the code adds `mid - i + 1`. Why is that count correct?",
+      "options": [
+        "The right half is sorted, so a[j] is smaller than every element still waiting in the right half",
+        "The left half is sorted, so a[i..mid] are all ≥ a[i] and therefore all greater than a[j]",
+        "Every left element before index i was already compared with a[j] and found to be greater",
+        "mid - i + 1 is the number of elements merged so far, and each of them forms a pair with a[j]"
+      ],
+      "answer": 1,
+      "why": "Merging `[2, 5, 7]` with `[1, 3, 6]`: when 1 is taken, `i` points at 2, so all 3 left elements beat it (+3); when 3 is taken, `i` points at 5 (+2: 5 and 7); when 6 is taken, `i` points at 7 (+1). That is 6 cross inversions, counted without comparing every pair.\n\nThe left elements before `i` were already moved to the output because they were `<=` some right element, so they are **not** greater than `a[j]`; that is why they are excluded. It is true that `a[j]` is smaller than the rest of the right half, but those are pairs inside one half, not cross pairs, so that fact does not justify the count.\n\nPairs inside a half are counted by the recursive calls, and sorting a half does not change which cross pairs are inversions. Takeaway: sortedness lets you count a whole block of pairs in O(1), turning O(n²) into O(n log n)."
+    },
+    {
+      "q": "Reverse Pairs counts pairs `i < j` with `nums[i] > 2 * nums[j]`, where values can be anywhere in the `int` range. Which comparison is correct for **every** input?",
+      "options": [
+        "nums[i] > 2L * nums[j]",
+        "nums[i] > (long) (2 * nums[j])",
+        "nums[i] / 2 > nums[j]",
+        "nums[i] - nums[j] > nums[j]"
+      ],
+      "answer": 0,
+      "why": "`2L * nums[j]` makes the multiplication itself happen in `long`, so it cannot overflow and the comparison is exact.\n\n`(long) (2 * nums[j])` casts too late: with `nums[j] = 1073741824` the `int` product wraps to -2147483648, so `1 > 2 * nums[j]` wrongly becomes true. `nums[i] / 2` truncates: for 3 and 1, `3 > 2` is true but `3 / 2 = 1 > 1` is false. The subtraction overflows too: with `nums[i] = Integer.MIN_VALUE` and `nums[j] = 1`, `nums[i] - nums[j]` wraps to `Integer.MAX_VALUE` and the pair is wrongly counted.\n\nTakeaway: widen **before** the arithmetic (`2L * x` or `(long) x * 2`), never after it."
+    },
+    {
+      "q": "This next permutation uses a **strict** `<` when scanning from the right for an element bigger than the pivot. What does it turn `a = [1, 2, 1]` into? (The correct next permutation is `[2, 1, 1]`.)",
+      "code": "int n = a.length, i = n - 2;\nwhile (i >= 0 && a[i] >= a[i + 1]) i--;\nif (i >= 0) {\n    int j = n - 1;\n    while (a[j] < a[i]) j--;      // strict <\n    swap(a, i, j);\n}\nreverse(a, i + 1, n - 1);",
+      "options": [
+        "[2, 1, 1]",
+        "[1, 2, 1]",
+        "[1, 1, 2]",
+        "It throws ArrayIndexOutOfBoundsException"
+      ],
+      "answer": 2,
+      "why": "Step 1 finds the pivot correctly: `i = 0`, because `a[0] = 1 < a[1] = 2`. Step 2 should find the rightmost element **strictly greater** than the pivot, but `while (a[j] < a[i])` stops at once on `a[2] = 1`, which is only **equal**. Swapping two equal values changes nothing, and reversing the suffix `[2, 1]` gives `[1, 1, 2]`, a permutation smaller than the input.\n\nWith `while (a[j] <= a[i]) j--;` the scan skips the equal 1 and stops at the 2: the swap gives `[2, 1, 1]` and reversing the suffix `[1, 1]` leaves it unchanged. The scan cannot run off the array in either version, because `a[i + 1] > a[i]` guarantees a stopping point.\n\nTakeaway: with duplicates, both scans must treat equal values as \"not bigger\" (`>=` in step 1, `<=` in step 2)."
+    },
+    {
+      "q": "Row `n` of Pascal's triangle can be built in O(n): start with `val = 1` and for `k = 1..n` do `val = val * (n - k + 1) / k`. Why does that integer division never lose anything?",
+      "options": [
+        "n - k + 1 is always divisible by k, so each factor divides cleanly",
+        "val * (n - k + 1) equals k * C(n, k), so it is always an exact multiple of k",
+        "Java's / rounds to the nearest integer, so small errors cancel out over the row",
+        "val is even after the first step, so dividing by a small k is always exact"
+      ],
+      "answer": 1,
+      "why": "Before step `k`, `val` holds `C(n, k-1)`, and `C(n, k) = C(n, k-1) * (n - k + 1) / k`. So the product `val * (n - k + 1)` is exactly `k * C(n, k)`, a multiple of `k`, and the division is exact.\n\nThe order matters: `n - k + 1` alone is usually **not** divisible by `k`. Writing `val * ((n - k + 1) / k)` builds row 5 as `1 5 10 10 0 0`, because `2 / 4` is 0 in Java (integer division truncates, it never rounds). `val` is not always even either: C(5, 1) = 5.\n\nThe product is `k` times bigger than the result, so it overflows first: in `int`, row 30 turns negative at k = 15 even though C(30, 15) = 155117520 fits in an `int`. Takeaway: multiply first, then divide, and keep the running value in `long`."
+    }
+  ]
+}

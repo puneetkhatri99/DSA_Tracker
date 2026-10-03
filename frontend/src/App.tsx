@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router';
 import { api } from './api';
 import { Header } from './components/Header';
+import { Loader } from './components/Loader';
 import type { Progress, User } from './lib';
 import Admin from './pages/Admin';
 import { Login, Signup } from './pages/Auth';
@@ -24,11 +25,12 @@ function Shell() {
   return <>
     <Header />
     <main id="main">
-      <Suspense fallback={<p className="quiet">Loading…</p>}><Routes>
+      <Suspense fallback={<Loader />}><Routes>
         <Route path="/roadmap/:id" element={<RoadmapPage />} />
         <Route path="/review" element={<Review />} />
         <Route path="/mock/:id" element={<Mock />} />
         <Route path="/quiz" element={<Quiz />} />
+        <Route path="/quiz/:topic/:level" element={<Quiz />} />
         <Route path="/notes" element={<Notes />} />
         <Route path="/notes/:id" element={<Notes />} />
         <Route path="/admin" element={user.is_admin ? <Admin /> : <Navigate to="/" replace />} />
@@ -61,9 +63,9 @@ export default function App() {
   const logout = () => api('/auth/logout', { method: 'POST' }).finally(() => { setUser(null); setData(undefined); navigate('/'); });
   const loggedIn = (u: User) => { setUser(u); if (pathname === '/signup') navigate('/', { replace: true }); };
 
-  if (user === undefined) return null;
+  if (user === undefined) return <Loader page />;
   if (!user) return pathname === '/signup' ? <Signup onDone={loggedIn} /> : <Login onDone={loggedIn} />;
   if (error) return <main><p className="bad">Failed to load: {error}</p></main>;
-  if (!data) return <main><p className="quiet">Loading…</p></main>;
+  if (!data) return <Loader page label="Loading your roadmaps…" />;
   return <StoreProvider key={user.id} user={user} content={data.content} progress={data.progress} logout={logout}><Shell /></StoreProvider>;
 }

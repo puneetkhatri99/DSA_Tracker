@@ -2,6 +2,7 @@ import { FloppyDiskIcon, PencilSimpleIcon, PlusIcon, XIcon } from '@phosphor-ico
 import { Fragment, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { api, cacheNote, getNote } from '../api';
+import { Loader } from '../components/Loader';
 import { Markdown } from '../components/Markdown';
 import type { Note, NoteRef } from '../lib';
 import { useStore } from '../store';
@@ -68,7 +69,7 @@ export default function Notes() {
           </div>
         </div> : <>
           {user.is_admin && note && <div className="note-tools"><button className="btn" onClick={() => setDraft(note)}><PencilSimpleIcon />Edit note</button></div>}
-          {error ? <p className="bad">{error}</p> : note ? <Markdown body={note.body} /> : <article className="md"><p className="quiet">Loading…</p></article>}
+          {error ? <p className="bad">{error}</p> : note ? <Markdown body={note.body} /> : <Loader label="Loading note…" />}
         </>}
       </div>
     </div>

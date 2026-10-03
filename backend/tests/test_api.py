@@ -79,7 +79,7 @@ def test_content(c):
     body = c.get('/api/content').json()
     learn, practice = body['roadmaps']
     assert (learn['id'], learn['nav'], practice['mock']) == ('learn', 'Learn', True)
-    assert sum(len(t['questions']) for t in learn['topics']) == 415
+    assert sum(len(t['questions']) for t in learn['topics']) == 420   # A2Z (415) plus five warm-ups
     assert learn['topics'][0]['note'] == 'learn-basics'
     assert len(body['notes']) == 33 and body['notes'][0]['id'] == 'java-io'
     assert '## When to use' in c.get('/api/notes/learn-arrays').json()['body']
@@ -129,6 +129,15 @@ def test_progress_is_validated_and_private(c):
     assert c.put('/api/progress/palindrome-number', json={'lc': 'javascript:alert(1)'}).status_code == 422
     assert c.put('/api/progress/palindrome-number', json={'done': 'yesterday'}).status_code == 422
     assert c.put('/api/progress/not-a-question', json={'star': True}).status_code == 404
+    # quiz scores live in $meta; clearing the finish date sends no target at all ('' is not a date)
+    quiz = {'arrays': {'easy': 5, 'medium': 3}, 'dp': {'hard': 4}}
+    assert c.put('/api/progress/$meta', json={'reviews': {'2026-09-30': 2}, 'quiz': quiz}).status_code == 204
+    got = c.get('/api/progress').json()['$meta']
+    assert got['quiz'] == quiz and 'target' not in got
+    assert c.put('/api/progress/$meta', json={'target': ''}).status_code == 422
+    assert c.put('/api/progress/$meta', json={'quiz': {'arrays': {'expert': 1}}}).status_code == 422
+    assert c.put('/api/progress/$meta', json={'quiz': {'Arrays!': {'easy': 1}}}).status_code == 422
+    assert c.put('/api/progress/$meta', json={'quiz': {'arrays': {'easy': -1}}}).status_code == 422
     signup(c, invite(c), 'b@example.com')
     assert c.get('/api/progress').json() == {}
     login(c, 'a@example.com', 'user-pass-1')
