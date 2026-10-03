@@ -1,58 +1,59 @@
 import { FireIcon } from '@phosphor-icons/react';
 import { Fragment, useLayoutEffect, useRef, useState, type MouseEvent } from 'react';
 import { QuestionRow } from '../components/QuestionRow';
-import { DAILY_NEW, activity, addDays, daysUntil, essential, isDue, monthsUpTo, streakOf, today, topicStats, type Question, type TopicStat } from '../lib';
+import { DAILY_NEW, activity, addDays, daysUntil, essential, isDue, monthsUpTo, streakOf, sumDays, today, topicStats, type DayCount, type Question, type TopicStat } from '../lib';
 import { useStore } from '../store';
 
 const fmt = (d: string, o: Intl.DateTimeFormatOptions) => new Date(d + 'T00:00').toLocaleDateString('en-US', o);
-const solves = (n: number) => `${n} ${n === 1 ? 'solve or review' : 'solves and reviews'}`;
+// "3 solved, 2 reviewed", leaving out a zero; '' when both are zero
+const said = (c?: DayCount) => [c?.solved && `${c.solved} solved`, c?.reviewed && `${c.reviewed} reviewed`].filter(Boolean).join(', ');
 const level = (n: number) => (n >= 6 ? 4 : n >= 4 ? 3 : n >= 2 ? 2 : n ? 1 : 0);
 
 // A year of activity in month blocks: one column per week of the month (Sunday on top), hover for the day.
-function Calendar({ counts }: { counts: Record<string, number> }) {
+// Colour is solves + reviews; the numbers keep them apart.
+function Calendar({ counts }: { counts: Record<string, DayCount> }) {
   const card = useRef<HTMLDivElement>(null), scroller = useRef<HTMLDivElement>(null);
   const [tip, setTip] = useState<{ x: number; y: number; align: string; text: string } | null>(null);
   useLayoutEffect(() => { scroller.current!.scrollLeft = scroller.current!.scrollWidth; }, []); // phones start at this month
 
   const months = monthsUpTo(today());
   const days = months.flatMap(m => m.days);
-  let total = 0, active = 0, run = 0, best = 0;
+  const total = sumDays(days.map(d => counts[d]));
+  let active = 0, run = 0, best = 0;
   for (const d of days) {
-    const n = counts[d] || 0;
-    total += n;
-    active += +!!n;
-    run = n ? run + 1 : 0;
+    active += +!!counts[d];
+    run = counts[d] ? run + 1 : 0;
     best = Math.max(best, run);
   }
   const show = (e: MouseEvent) => {
     const cell = (e.target as HTMLElement).closest<HTMLElement>('[data-date]');
     if (!cell) return setTip(null);
-    const r = cell.getBoundingClientRect(), box = card.current!.getBoundingClientRect(), n = counts[cell.dataset.date!] || 0;
+    const r = cell.getBoundingClientRect(), box = card.current!.getBoundingClientRect();
     const x = r.left + r.width / 2 - box.left;
     setTip({ x, y: r.top - box.top, align: x < 130 ? 'start' : x > box.width - 130 ? 'end' : '', // keep it inside the card near the edges
-      text: `${n ? solves(n) : 'Nothing'} on ${fmt(cell.dataset.date!, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}` });
+      text: `${said(counts[cell.dataset.date!]) || 'Nothing'} on ${fmt(cell.dataset.date!, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}` });
   };
   return (
     <div className="cal" ref={card}>
       <div className="cal-head">
-        <p><b>{total}</b> {total === 1 ? 'solve or review' : 'solves and reviews'} in the past year</p>
+        <p><b>{total.solved}</b> solved · <b>{total.reviewed}</b> reviewed in the past year</p>
         <p>Active days <b>{active}</b></p>
         <p>Max streak <b>{best}</b></p>
       </div>
       <div className="cal-scroll" ref={scroller}>
-        <div className="cal-grid" role="img" aria-label={`${solves(total)} in the past year, on ${active} days`}>
+        <div className="cal-grid" role="img" aria-label={`${total.solved} solved and ${total.reviewed} reviewed in the past year, on ${active} days`}>
           <div className="cal-days"><div><span /><span>Mon</span><span /><span>Wed</span><span /><span>Fri</span><span /></div><b className="cal-label" /></div>
           <div className="cal-months" onMouseOver={show} onMouseLeave={() => setTip(null)}>
             {months.map(m => {
-              const cols = Math.ceil((m.pad + m.days.length) / 7), sum = m.days.reduce((s, d) => s + (counts[d] || 0), 0);
+              const cols = Math.ceil((m.pad + m.days.length) / 7), sum = sumDays(m.days.map(d => counts[d]));
               return (
                 // width = cols × day + (cols − 1) × 3px gap, so every month's days come out the same size
                 <div key={m.first} className="cal-month" style={{ flex: `${cols} 1 ${(cols - 1) * 3}px` }}>
                   <div className="cal-cells" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
                     {Array.from({ length: m.pad }, (_, i) => <i key={i} className="pad" />)}
-                    {m.days.map(d => <i key={d} data-date={d} className={`l${level(counts[d] || 0)}`} />)}
+                    {m.days.map(d => <i key={d} data-date={d} className={`l${level((counts[d]?.solved || 0) + (counts[d]?.reviewed || 0))}`} />)}
                   </div>
-                  <b className="cal-label" title={`${solves(sum)} in ${fmt(m.first, { month: 'long', year: 'numeric' })}`}>{fmt(m.first, { month: 'short' })}</b>
+                  <b className="cal-label" title={`${fmt(m.first, { month: 'long', year: 'numeric' })}: ${said(sum) || 'nothing yet'}`}>{fmt(m.first, { month: 'short' })}</b>
                 </div>
               );
             })}

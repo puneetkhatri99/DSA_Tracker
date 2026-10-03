@@ -1,6 +1,7 @@
-import { CopyIcon, TrashIcon, UserPlusIcon } from '@phosphor-icons/react';
-import { useEffect, useState } from 'react';
+import { CheckIcon, CopyIcon, TrashIcon, UserPlusIcon, XIcon } from '@phosphor-icons/react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '../api';
+import { Loader } from '../components/Loader';
 import { useStore } from '../store';
 
 interface Invite { code: string; expires_at: string; used_by: string | null }
@@ -13,7 +14,16 @@ export default function Admin() {
   const [invites, setInvites] = useState<Invite[] | null>(null);
   const load = () => api<Invite[]>('/invites').then(setInvites, e => showStatus(e.message, true));
   useEffect(() => { load(); }, []);
-  const copy = (code: string) => navigator.clipboard.writeText(link(code)).then(() => showStatus('Link copied'), () => showStatus('Copy failed; select the link instead', true));
+  // The row's Copy button says whether it worked for a few seconds (the header status is hidden on phones).
+  const [copied, setCopied] = useState<{ code: string; ok: boolean }>();
+  const clear = useRef<number>(undefined);
+  const copy = (code: string) => Promise.resolve().then(() => navigator.clipboard.writeText(link(code))).then(() => true, () => false).then(ok => {
+    setCopied({ code, ok });
+    clearTimeout(clear.current);
+    clear.current = window.setTimeout(() => setCopied(undefined), 2500);
+    showStatus(ok ? 'Link copied' : 'Copy failed; select the link and copy it yourself', !ok);
+  });
+  useEffect(() => () => clearTimeout(clear.current), []);
   const create = () => api<Invite>('/invites', { method: 'POST' }).then(i => { copy(i.code); load(); }, e => showStatus(e.message, true));
   const revoke = (code: string) => api(`/invites/${encodeURIComponent(code)}`, { method: 'DELETE' }).then(load, e => showStatus(e.message, true));
   const open = invites?.filter(i => !i.used_by) || [], used = invites?.filter(i => i.used_by) || [];
@@ -24,14 +34,16 @@ export default function Admin() {
     </section>
     <section className="day">
       <h2>Open links <span>{open.length}</span></h2>
-      {!invites ? <p className="quiet">Loading…</p> : open.length ? <div className="card">{open.map(i => (
+      {!invites ? <Loader label="Loading invite links…" /> : open.length ? <div className="card">{open.map(i => (
         <div className="invite" key={i.code}>
           <input readOnly value={link(i.code)} aria-label="Invite link" onFocus={e => e.target.select()} />
           <small>expires {date(i.expires_at)}</small>
-          <button className="icon" title="Copy link" aria-label="Copy link" onClick={() => copy(i.code)}><CopyIcon /></button>
+          <button className={`btn copy ${copied?.code !== i.code ? '' : copied.ok ? 'done' : 'failed'}`} onClick={() => copy(i.code)}>
+            {copied?.code !== i.code ? <><CopyIcon />Copy</> : copied.ok ? <><CheckIcon />Copied</> : <><XIcon />Copy failed</>}</button>
           <button className="icon" title="Revoke" aria-label="Revoke" onClick={() => revoke(i.code)}><TrashIcon /></button>
         </div>))}</div> : <p className="quiet">No open links. Make one and send it to the person you want to invite.</p>}
     </section>
+    <p className="sr-only" aria-live="polite">{copied ? (copied.ok ? 'Invite link copied' : 'Copy failed') : ''}</p>
     {used.length > 0 && <section className="day">
       <h2>Joined recently <span>{used.length}</span></h2>
       <div className="card">{used.map(i => <div className="invite" key={i.code}><span>{i.used_by}</span></div>)}</div>

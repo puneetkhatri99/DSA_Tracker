@@ -403,6 +403,9 @@ main.auth { display: grid; place-items: center; min-height: 100dvh; padding: 24p
 .invite:first-child { border-top: 0; }
 .invite input { flex: 1; min-width: 0; font: 12.5px var(--mono); color: var(--muted); }
 .invite small { font: 12px var(--mono); color: var(--muted); white-space: nowrap; }
+.invite .copy { height: 32px; min-width: 104px; justify-content: center; padding: 0 10px; font-size: 13px; transition: color .15s, border-color .15s, background .15s; }
+.invite .copy.done { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.invite .copy.failed { border-color: var(--hard); color: var(--hard); }
 
 /* ---------- small screens ---------- */
 @media (max-width: 760px) {
@@ -432,6 +435,9 @@ main.auth { display: grid; place-items: center; min-height: 100dvh; padding: 24p
   .q .meta { margin-left: 30px; }
   .group > summary { padding-left: 12px; }
   .group > .q { padding-left: 16px; }
+  .invite { flex-wrap: wrap; padding: 10px 8px 8px 12px; }
+  .invite input { flex: 1 1 100%; }   /* the link gets its own line; expiry and buttons go under it */
+  .invite small { margin-right: auto; }
   #nav a { padding: 6px 9px; }
   .panel { margin: 0; }
   #timer .t-title, .search kbd { display: none; }

@@ -43,7 +43,7 @@ For frontend work, run `npm run dev` in `frontend/` as well and open http://loca
 ## Accounts
 
 - **Login** puts a session cookie in your browser that lasts **30 days** (httpOnly, so page scripts can't read it). Log out from the account menu at the top right. Passwords are hashed with argon2, and 10 wrong passwords for one email lock it for 15 minutes.
-- **Inviting someone**: account menu → **Invite people** → **New invite link**. The link is copied for you. It creates one account and expires after 7 days; you can revoke it before it is used. There is no public sign-up.
+- **Inviting someone**: account menu → **Invite people** → **New invite link**. The link is copied for you, and its row's button shows **✓ Copied** for a few seconds (or **Copy failed** if the browser blocked the clipboard; then select the link and copy it yourself). **Copy** copies it again later. It creates one account and expires after 7 days; you can revoke it before it is used. There is no public sign-up.
 - Everyone has their own progress, notes, code and review schedule. Roadmaps and study notes are shared.
 - **Study notes**: only the admin sees **Edit note** (markdown with a live preview) and **New note**. Edits are saved in MongoDB. Running `seed` again never overwrites an edited note (`seed --force-notes` resets them to the files in `content/`).
 
@@ -53,7 +53,7 @@ The app opens on **Today**, your plan for the day:
 
 - **Reviews due**: every solved question whose spaced-repetition review is due, from both roadmaps.
 - **New today**: the next unsolved questions in the Learning Series. Set a **finish date** (tomorrow or later) and the daily number is worked out for you (questions left ÷ days left, today and the finish day included, fixed at the start of the day). With no date, or a date that is today or has passed, it is 3 a day (`DAILY_NEW` in `frontend/src/lib.ts`).
-- **Activity**: the last 12 months of solves and reviews, one block per month (hover a day for its count, a month name for the month's total), plus your active days, longest streak and current streak.
+- **Activity**: the last 12 months, one block per month. The header counts questions **solved** and **reviewed** separately; hover a day or a month name for its own solved and reviewed counts (the colour shows both together). Also your active days, longest streak and current streak.
 
 ## Solving a question
 

@@ -79,14 +79,19 @@ export function nextUp(rm: Roadmap, progress: Progress, f: Filters) {
 }
 
 // ---------- activity ----------
-export function activity(progress: Progress, meta: Meta) { // date → solves + reviews that day
-  const counts: Record<string, number> = { ...meta.reviews };
-  for (const s of Object.values(progress)) if (s.done) counts[s.done] = (counts[s.done] || 0) + 1;
-  return counts;
+export interface DayCount { solved: number; reviewed: number }
+export function activity(progress: Progress, meta: Meta) { // date → questions first solved and reviews done that day (only active days)
+  const days: Record<string, DayCount> = {};
+  const on = (d: string) => (days[d] ||= { solved: 0, reviewed: 0 });
+  for (const [d, n] of Object.entries(meta.reviews || {})) if (n) on(d).reviewed += n;
+  for (const s of Object.values(progress)) if (s.done) on(s.done).solved++;
+  return days;
 }
-export function streakOf(counts: Record<string, number>) {
+export const sumDays = (days: (DayCount | undefined)[]) =>
+  days.reduce<DayCount>((t, d) => ({ solved: t.solved + (d?.solved || 0), reviewed: t.reviewed + (d?.reviewed || 0) }), { solved: 0, reviewed: 0 });
+export function streakOf(days: Record<string, DayCount>) {
   let n = 0;
-  for (let d = counts[today()] ? today() : addDays(today(), -1); counts[d]; d = addDays(d, -1)) n++;
+  for (let d = days[today()] ? today() : addDays(today(), -1); days[d]; d = addDays(d, -1)) n++;
   return n;
 }
 // The n months up to `end`, each with its days (the 1st up to the month's end, or `end` in the last month)
