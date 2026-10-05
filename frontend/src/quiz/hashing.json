@@ -1,0 +1,185 @@
+{
+  "easy": [
+    {
+      "q": "Range Sum Query: `pre` is built as below so that each query is O(1). Which expression gives the sum of `a[l..r]` (both ends inclusive, 0-indexed)?",
+      "code": "int[] pre = new int[n + 1];               // pre[i] = a[0] + ... + a[i - 1]\nfor (int i = 0; i < n; i++) pre[i + 1] = pre[i] + a[i];",
+      "options": [
+        "pre[r + 1] - pre[l]",
+        "pre[r] - pre[l]",
+        "pre[r] - pre[l - 1]",
+        "pre[r + 1] - pre[l + 1]"
+      ],
+      "answer": 0,
+      "why": "`pre[r + 1]` is the sum of `a[0..r]` and `pre[l]` is the sum of `a[0..l-1]`; subtracting removes everything before `l`. With `a = [2, 4, 6, 8]`, `pre = [0, 2, 6, 12, 20]`, and the sum of `a[1..2]` is `pre[3] - pre[1] = 12 - 2 = 10 = 4 + 6`.\n\n`pre[r] - pre[l - 1]` belongs to the other convention (where `pre[i]` includes `a[i]`); here it gives `pre[2] - pre[0] = 6`, the wrong range, and it crashes for `l = 0`. `pre[r] - pre[l]` drops `a[r]` and gives 4.\n\nTakeaway: the extra leading 0 in an `n + 1` sized prefix array removes the `l = 0` special case; build in O(n), answer each query in O(1), and use `long` when sums can exceed `int`."
+    },
+    {
+      "q": "Return true if no two different values occur the same number of times (`[1, 2, 2, 1, 1, 3]` has counts 3, 2, 1, so true). You already have `Map<Integer, Integer> freq` from value to count. What finishes the job?",
+      "options": [
+        "Check that freq.size() equals arr.length, so every value appears once",
+        "Add every key of freq to a HashSet and check that its size equals freq.size()",
+        "Put all counts (freq.values()) in a HashSet and compare its size with freq.size()",
+        "Sort arr and check that no two neighbouring elements are equal"
+      ],
+      "answer": 2,
+      "why": "The question is about the **counts**, so the counts are what must be distinct. If two values share a count, the set of counts is smaller than the number of values: for `[1, 2]` the counts are 1 and 1, the set is `{1}` with size 1 versus `freq.size() = 2`, so the answer is false.\n\n`freq.size() == arr.length` and the sorted-neighbours check both test whether the **values** are all distinct, which is a different problem. Putting the keys into a set always gives `freq.size()`, because map keys are already unique.\n\nTakeaway: frequency problems are often two layers of hashing: a map to count, then a set (or another map) over the counts."
+    },
+    {
+      "q": "What happens when this runs?",
+      "code": "Map<Integer, Integer> freq = new HashMap<>();\nfreq.put(1, 3);\nint c = freq.get(5);\nSystem.out.println(c);",
+      "options": [
+        "It prints 0, the default for a missing key",
+        "It throws a NullPointerException",
+        "It prints null, because the key is missing",
+        "It fails to compile: an int cannot hold null"
+      ],
+      "answer": 1,
+      "why": "`get` returns `null` for a missing key, and assigning that `Integer` to an `int` auto-unboxes it by calling `intValue()` on `null`, which throws a `NullPointerException`. It compiles, because unboxing `Integer` to `int` is legal; the failure only shows up at runtime.\n\nIt cannot print `null`, since `c` is a primitive `int`, and a map never invents a default 0. Use `freq.getOrDefault(5, 0)`, or keep the result as an `Integer` and check it for `null` (as Two Sum does).\n\nTakeaway: any `int x = map.get(key)` is a crash waiting for a missing key."
+    },
+    {
+      "q": "Two Sum with a map from value to index. This version stores the current element **before** looking up its complement. What does it return for `nums = [3, 2, 4]`, `target = 6`?",
+      "code": "Map<Integer, Integer> seen = new HashMap<>();\nfor (int i = 0; i < nums.length; i++) {\n    seen.put(nums[i], i);\n    Integer j = seen.get(target - nums[i]);\n    if (j != null) return new int[]{j, i};\n}\nreturn new int[]{-1, -1};",
+      "options": [
+        "[1, 2]",
+        "[0, 2]",
+        "[-1, -1]",
+        "[0, 0]"
+      ],
+      "answer": 3,
+      "why": "At `i = 0` it stores `3 → 0` and then looks up `6 - 3 = 3`, which it has just stored, so it returns `[0, 0]`: the element paired with itself. The intended answer is `[1, 2]` (2 + 4).\n\nThe fix is to swap the two steps: look up `target - nums[i]` first, and only then `put(nums[i], i)`. The map then holds only **earlier** indices, so `j < i` is guaranteed, and an input like `[3, 3]` with target 6 still correctly returns `[0, 1]`.\n\nTakeaway: in the hashing counting pattern, query first, then insert, so an element never matches itself."
+    },
+    {
+      "q": "To find the **first** non-repeating character of a string, you count characters in a map and then return the first entry (in the map's iteration order) whose count is 1. Which map makes that correct?",
+      "options": [
+        "HashMap<Character, Integer>",
+        "TreeMap<Character, Integer>",
+        "LinkedHashMap<Character, Integer>",
+        "An int[26] indexed by c - 'a', scanned from index 0 to 25"
+      ],
+      "answer": 2,
+      "why": "`LinkedHashMap` iterates in insertion order, and a character is inserted when it first appears, so its order is first-occurrence order. For `\"leetcode\"` it returns `l`, the right answer.\n\n`TreeMap` and the `int[26]` scan both go alphabetically and return `c`. `HashMap` order depends on hash buckets: for `\"leetcode\"` it also returns `c`, while for `\"swiss\"` it happens to return the right `w`, which is exactly how this bug survives small tests.\n\nThe other standard fix is to count with an `int[26]` and then scan the **string** again, returning the first character whose count is 1. Takeaway: `HashMap` has no order; use `LinkedHashMap` for insertion order and `TreeMap` for sorted order."
+    }
+  ],
+  "medium": [
+    {
+      "q": "Counting subarrays with sum `k` using prefix sums and a map, but the line `seen.put(0, 1)` was forgotten. What does this return for `nums = [1, 2, 3]`, `k = 3`?",
+      "code": "Map<Integer, Integer> seen = new HashMap<>();\nint prefix = 0, count = 0;\nfor (int x : nums) {\n    prefix += x;\n    count += seen.getOrDefault(prefix - k, 0);\n    seen.merge(prefix, 1, Integer::sum);\n}\nreturn count;",
+      "options": [
+        "1",
+        "2",
+        "0",
+        "3"
+      ],
+      "answer": 0,
+      "why": "The prefixes are 1, 3, 6. At prefix 3 the code looks for an earlier prefix equal to `3 - 3 = 0`, which is the empty prefix before index 0, but it was never stored, so the subarray `[1, 2]` is missed. At prefix 6 it finds the earlier prefix 3 and counts `[3]`. Result: 1 instead of the correct 2.\n\n`seen.put(0, 1)` represents the empty prefix, so subarrays that **start at index 0** can be counted. Without it, every subarray beginning at index 0 is invisible.\n\nTakeaway: seed the map with the empty prefix: `put(0, 1)` for counting, `put(0, -1)` for longest-length problems."
+    },
+    {
+      "q": "Find the length of the **longest** subarray with sum exactly `k`. The array may contain negative numbers and zeros. Which approach is correct and O(n)?",
+      "options": [
+        "A sliding window: grow the right end and shrink from the left while the sum exceeds k",
+        "Prefix sums with a map from each prefix value to the latest index where it appeared",
+        "Sort the array, then move two pointers inward until the sum equals k",
+        "Prefix sums with a map from each prefix value to the first index where it appeared"
+      ],
+      "answer": 3,
+      "why": "A subarray `(j, i]` has sum `k` when `prefix[i] - prefix[j] == k`, so at each `i` you look up `prefix[i] - k`. To make `i - j` as **long** as possible, `j` must be the earliest index with that prefix, so you store the first index (`putIfAbsent`) and never overwrite it.\n\nA sliding window assumes that growing the window never lowers the sum, which negatives break: for `[5, -3, 1]` with `k = 3` it shrinks the 5 away too early and finds nothing, although the whole array sums to 3. Storing the latest index finds shorter windows, and sorting destroys contiguity.\n\nTakeaway: negatives or zeros in a subarray-sum problem mean prefix sum + hash map; first index for \"longest\", counts for \"how many\"."
+    },
+    {
+      "q": "This anagram check passes small tests but returns false for two identical strings that each contain the letter `a` 200 times. Why?",
+      "code": "Map<Character, Integer> m1 = count(s), m2 = count(t);   // char -> frequency\nif (m1.size() != m2.size()) return false;\nfor (char c : m1.keySet())\n    if (m1.get(c) != m2.get(c)) return false;\nreturn true;",
+      "options": [
+        "A HashMap<Character, Integer> cannot hold a count above 127 for a char key",
+        "!= compares references, and Integers above 127 are separate objects even when equal",
+        "The char loop variable makes get(c) look up an int key, which misses the stored Character",
+        "Calling get on m2 while iterating m1.keySet() disturbs the iteration and skips keys"
+      ],
+      "answer": 1,
+      "why": "`m1.get(c)` and `m2.get(c)` are `Integer` objects, and `!=` on two objects compares references, not values. Java caches `Integer` objects only for -128..127, so small counts share one object and the check happens to work; 200 is boxed into two separate objects, and `!=` is true even though both hold 200.\n\nThe map stores the count fine, and `get(c)` autoboxes the `char` to a `Character`, so the lookup itself succeeds; reading another map never disturbs the iteration either. Fix it with `!m1.get(c).equals(m2.get(c))`, `Objects.equals(...)`, by unboxing to `int` first, or by using an `int[26]`, which avoids boxing entirely.\n\nTakeaway: never compare boxed values with `==` or `!=`; it passes tests with small numbers and fails on real data."
+    },
+    {
+      "q": "Longest Consecutive Sequence with a `HashSet`: what is the worst-case time if you **delete** the marked line?",
+      "code": "Set<Integer> set = new HashSet<>();\nfor (int x : nums) set.add(x);\nint best = 0;\nfor (int x : set) {\n    if (set.contains(x - 1)) continue;   // <- delete this line\n    int len = 1;\n    while (set.contains(x + len)) len++;\n    best = Math.max(best, len);\n}",
+      "options": [
+        "O(n), because each set lookup is O(1)",
+        "O(n log n), the same as sorting the numbers first",
+        "O(n²), because every element walks to the end of its run",
+        "O(n) amortised, because each number is added to the set once"
+      ],
+      "answer": 2,
+      "why": "Without the check, every number starts its own walk. For `nums = 1..n`, the walk from 1 takes n steps, from 2 takes n - 1, and so on: about n²/2 lookups (500,500 for n = 1000).\n\nWith the check, only the head of a run (where `x - 1` is absent) starts a walk, so each number is visited by at most one walk and the total is O(n): about 2,000 lookups for n = 1000. O(1) lookups alone do not make the loop O(n); what matters is how many lookups happen, and inserting each number once says nothing about how often it is looked up.\n\nTakeaway: a nested loop is not automatically O(n²), and removing one guard can make it so; count the total work across all iterations."
+    },
+    {
+      "q": "Counting subarrays whose XOR equals `k` with a prefix-XOR map. What goes in the blank?",
+      "code": "Map<Integer, Integer> seen = new HashMap<>();\nseen.put(0, 1);\nint px = 0, count = 0;\nfor (int x : nums) {\n    px ^= x;\n    count += seen.getOrDefault(/* ___ */, 0);\n    seen.merge(px, 1, Integer::sum);\n}",
+      "options": [
+        "px ^ k",
+        "px - k",
+        "k - px",
+        "px & k"
+      ],
+      "answer": 0,
+      "why": "The XOR of a subarray `(j, i]` is `px_i ^ px_j`, because the shared prefix `a[0..j]` cancels itself out. You need `px_i ^ px_j == k`, and XOR-ing both sides with `px_i` gives `px_j == px_i ^ k`, so that is the key to look up.\n\n`px - k` is a habit carried over from the sum version, but XOR is not subtraction. For `nums = [2, 5, 3]` and `k = 6`, the subarray `[5, 3]` has XOR 6: `px ^ k` finds it (count 1), while `px - k` returns 0.\n\nTakeaway: the prefix + map template works for any operation that can be undone; for sums the undo is `-`, for XOR it is XOR itself."
+    }
+  ],
+  "hard": [
+    {
+      "q": "Longest subarray with sum `k`: this version records each prefix with `put` (overwriting) instead of `putIfAbsent`. What does it return for `a = [1, -1, 1, 1]`, `k = 2`?",
+      "code": "Map<Integer, Integer> idx = new HashMap<>();\nidx.put(0, -1);\nint prefix = 0, best = 0;\nfor (int i = 0; i < a.length; i++) {\n    prefix += a[i];\n    Integer j = idx.get(prefix - k);\n    if (j != null) best = Math.max(best, i - j);\n    idx.put(prefix, i);\n}\nreturn best;",
+      "options": [
+        "4",
+        "2",
+        "3",
+        "1"
+      ],
+      "answer": 1,
+      "why": "The prefixes are 1, 0, 1, 2. At `i = 1` the prefix 0 overwrites the seed `0 → -1` with `0 → 1`. At `i = 3` the prefix is 2, the code looks up `2 - 2 = 0`, finds index 1 and computes the length `3 - 1 = 2` (the subarray `[1, 1]`).\n\nThe whole array also sums to 2 and has length 4, but finding it needs the **earliest** index of prefix 0, which was -1 before it got overwritten. Repeated prefixes appear whenever a stretch sums to zero (here `[1, -1]`), which only happens with negatives or zeros.\n\nTakeaway: for the longest subarray, keep the first index of each prefix (`putIfAbsent`); overwriting with later indices quietly shortens the answer."
+    },
+    {
+      "q": "Counting subarrays with sum `k`, someone stores prefixes in a `HashSet` instead of a count map. What does this return for `nums = [0, 0, 0]`, `k = 0`?",
+      "code": "Set<Integer> seen = new HashSet<>();\nseen.add(0);\nint prefix = 0, count = 0;\nfor (int x : nums) {\n    prefix += x;\n    if (seen.contains(prefix - k)) count++;\n    seen.add(prefix);\n}\nreturn count;",
+      "options": [
+        "6",
+        "1",
+        "0",
+        "3"
+      ],
+      "answer": 3,
+      "why": "Every prefix is 0, and 0 is always in the set, so `count++` runs once per element: 3. But there are 6 subarrays with sum 0: three of length 1, two of length 2 and one of length 3.\n\nAt index `i`, the number of valid subarrays ending there equals **how many** earlier prefixes equal `prefix - k`, not whether one exists. With a count map, prefix 0 has been seen 1, then 2, then 3 times, giving 1 + 2 + 3 = 6; a set collapses those repeats into one.\n\nTakeaway: counting subarrays needs frequencies, while existence or longest-length questions need only presence or the first index. Repeated prefixes come from zeros and negatives."
+    },
+    {
+      "q": "This Group Anagrams uses the letter-count array itself as the map key. What does it return for `[\"eat\", \"tea\", \"tan\"]`?",
+      "code": "Map<int[], List<String>> groups = new HashMap<>();\nfor (String s : strs) {\n    int[] f = new int[26];\n    for (char c : s.toCharArray()) f[c - 'a']++;\n    groups.computeIfAbsent(f, x -> new ArrayList<>()).add(s);\n}\nreturn new ArrayList<>(groups.values());",
+      "options": [
+        "Three groups with one string each",
+        "Two groups: [eat, tea] and [tan]",
+        "One group containing all three strings",
+        "A compile error, because arrays cannot be map keys"
+      ],
+      "answer": 0,
+      "why": "Arrays do not override `equals` and `hashCode`; they inherit the identity-based versions from `Object`. Every `new int[26]` is therefore a different key, even when the counts for \"eat\" and \"tea\" are identical, so each string ends up alone.\n\nIt compiles fine, since any object can be a key, which is what makes the bug quiet. Fix it with a key whose equality depends on its contents: `Arrays.toString(f)`, a `String` of the sorted characters, or a `List<Integer>`.\n\nTakeaway: a hash key needs value-based `equals` and `hashCode`; `String`, boxed numbers, `List` and records have them, arrays do not."
+    },
+    {
+      "q": "A `List` is used as a `HashMap` key and then modified. What does the last line print?",
+      "code": "Map<List<Integer>, String> map = new HashMap<>();\nList<Integer> key = new ArrayList<>(List.of(1, 2));\nmap.put(key, \"found\");\nkey.add(3);\nSystem.out.println(map.get(key) + \" \" + map.size());",
+      "options": [
+        "found 1",
+        "null 0",
+        "null 1",
+        "found 2"
+      ],
+      "answer": 2,
+      "why": "`HashMap` computes the key's hash at `put` time and files the entry in a bucket chosen from it. `key.add(3)` changes `key.hashCode()`, so `get(key)` looks for the new hash and finds nothing: it prints `null`, while the entry is still there, so `size()` is 1.\n\nGoing back to the old value does not help either: `map.get(List.of(1, 2))` has the right hash, but `equals` now compares against the stored list, which is `[1, 2, 3]`, so it also returns `null`. The entry is stranded in the map.\n\nTakeaway: never mutate an object while it is a key in a `HashMap` or an element of a `HashSet`; use immutable keys (`String`, `List.of`, records)."
+    },
+    {
+      "q": "Count pairs `i < j` with `a[i] + a[j] == k`. This version builds the whole frequency map first, then adds up matches and halves the total. What does it return for `a = [2, 2, 2]`, `k = 4`?",
+      "code": "Map<Integer, Integer> freq = new HashMap<>();\nfor (int x : a) freq.merge(x, 1, Integer::sum);\nint pairs = 0;\nfor (int x : a) pairs += freq.getOrDefault(k - x, 0);\nreturn pairs / 2;",
+      "options": [
+        "3",
+        "4",
+        "9",
+        "6"
+      ],
+      "answer": 1,
+      "why": "The map is `{2: 3}`, and each of the three 2s adds 3, giving 9; `9 / 2` is 4 in integer division. The right answer is 3: the pairs (0, 1), (0, 2) and (1, 2).\n\nHalving fixes the double counting of ordered pairs, but each element also matched **itself** because `2 + 2 == k`: 9 = 6 ordered pairs + 3 self-pairs. The one-pass version avoids both problems:\n```java\nfor (int x : a) {\n    pairs += freq.getOrDefault(k - x, 0);   // only earlier elements\n    freq.merge(x, 1, Integer::sum);\n}\n```\nIt adds 0 + 1 + 2 = 3.\n\nTakeaway: query-then-insert counts each unordered pair exactly once and never pairs an element with itself, even when `x == k - x`."
+    }
+  ]
+}

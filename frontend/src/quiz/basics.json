@@ -1,0 +1,180 @@
+{
+  "easy": [
+    {
+      "q": "How does the number of iterations of the digit loop below grow with the value of n? Assume n is positive and can be very large.",
+      "code": "int count = 0;\nwhile (n > 0) {\n    count++;\n    n /= 10;\n}",
+      "options": [
+        "Like n / 10, since each step divides n by 10",
+        "Like log₁₀ n, since each step removes one digit",
+        "Like √n, the same as checking divisors",
+        "Like n, since every value down to 0 is visited"
+      ],
+      "answer": 1,
+      "why": "Each `n /= 10` chops off the last digit, so the loop runs exactly once per digit. A number n has ⌊log₁₀ n⌋ + 1 digits: 9045 → 904 → 90 → 9 → 0 is 4 iterations for 4 digits.\n\nThe tempting \"n / 10\" mixes up the *value* after one step with the *number of steps*: dividing by 10 again and again shrinks n geometrically, not by a fixed amount.\n\n**Takeaway:** count, sum and reverse digits, palindrome number and Armstrong are all O(log n), i.e. O(number of digits), which is tiny even for n near 1e18."
+    },
+    {
+      "q": "To test whether n is prime, the loop only tries divisors `i` while `i * i <= n`. Why is stopping at √n enough?",
+      "options": [
+        "No number greater than √n can divide n evenly, except n itself",
+        "Every composite number has a prime factor smaller than log n",
+        "Primes become rare past √n, so a divisor there is unlikely",
+        "If n = a × b with a ≤ b, then a ≤ √n, so a divisor is found in time"
+      ],
+      "answer": 3,
+      "why": "Divisors come in pairs `(i, n / i)`. If n = a × b and both a and b were greater than √n, their product would exceed n, so every composite n has a divisor a ≤ √n, and the loop is guaranteed to reach it before `i * i` passes n.\n\nThe tempting \"nothing above √n divides n\" is false: for n = 10, 5 > √10 ≈ 3.16 does divide 10, but its partner 2 was already found. The argument is exact, not about primes being rare.\n\n**Takeaway:** divisor listing and primality checks run in O(√n) because you only need the smaller member of each divisor pair."
+    },
+    {
+      "q": "Why compute the LCM of two `int`s as `a / gcd(a, b) * b` instead of `a * b / gcd(a, b)`?",
+      "options": [
+        "`a * b / gcd` truncates in integer division and loses the remainder",
+        "Dividing first is faster, because division is cheaper than multiplying",
+        "`a * b` can overflow before the division; dividing first keeps it small",
+        "`a * b / gcd` gives a wrong result whenever a and b are coprime"
+      ],
+      "answer": 2,
+      "why": "gcd(a, b) always divides a exactly, so `a / gcd` is an exact integer and multiplying by b gives the true LCM whenever the LCM itself fits. The other order computes `a * b` first, which can overflow even when the answer is small: with a = 200000, b = 300000 (gcd 100000), `a * b / gcd` prints -1295, while `a / gcd * b` gives 600000.\n\nThe truncation worry is wrong: a × b is always divisible by gcd(a, b), so integer division loses nothing. The only problem is overflow.\n\n**Takeaway:** when a formula has a big product and an exact division, divide first."
+    },
+    {
+      "q": "You must count how often each value appears in an array of up to 1e5 integers, where values range from -1e9 to 1e9. Which structure fits best?",
+      "options": [
+        "A `HashMap<Integer, Integer>` from value to count",
+        "An `int[]` indexed by value, sized to the largest value + 1",
+        "A `HashSet<Integer>` holding every value seen so far",
+        "A `boolean[]` marking which values have appeared"
+      ],
+      "answer": 0,
+      "why": "A HashMap stores only the keys that actually occur, so it uses O(distinct values) memory and gives O(1) average updates with `freq.put(x, freq.getOrDefault(x, 0) + 1)`.\n\nAn array indexed by value would need about 2e9 slots (8 GB of ints) and cannot take negative indices without an offset, so it only fits when values are small and non-negative (up to about 1e7). A HashSet or a boolean array records only *whether* a value appeared, not *how many times*.\n\n**Takeaway:** small, dense, non-negative keys → `int[]`; large, negative or sparse keys → `HashMap`."
+    },
+    {
+      "q": "Strings `s` and `t` contain only lowercase letters. Which check correctly decides, in O(n), whether `t` is an anagram of `s`?",
+      "options": [
+        "Same length, and the sum of character codes in s equals the sum in t",
+        "Same length, and an `int[26]` counted up for s and down for t ends all zero",
+        "Same length, and every character of s appears somewhere in t",
+        "Same length, and the XOR of all characters of s and t together is zero"
+      ],
+      "answer": 1,
+      "why": "An anagram must use every letter the same number of times, and `count[c - 'a']++` for s, `count[c - 'a']--` for t compares exactly those 26 counts.\n\nThe shortcuts all collide: \"ad\" and \"bc\" both have code sum 197; \"aab\" vs \"abb\" passes the \"every character appears\" test but is not an anagram; and \"aa\" vs \"bb\" XORs to 0 because equal characters cancel.\n\n**Takeaway:** compare full frequency counts. Any single summary number (sum, XOR) can collide."
+    }
+  ],
+  "medium": [
+    {
+      "q": "This half-reversal palindrome check forgot the guard that rejects numbers ending in 0. For which input does it return the **wrong** answer?",
+      "code": "boolean isPalindrome(int x) {\n    if (x < 0) return false;\n    int half = 0;\n    while (x > half) {\n        half = half * 10 + x % 10;\n        x /= 10;\n    }\n    return x == half || x == half / 10;\n}",
+      "options": [
+        "0",
+        "1221",
+        "10",
+        "7"
+      ],
+      "answer": 2,
+      "why": "Trace x = 10: half = 0·10 + 0 = 0 and x = 1; then 1 > 0, so half = 1 and x = 0. The loop stops and `x == half / 10` is `0 == 0`, so it returns `true`, but 10 is not a palindrome. The trailing 0 becomes a *leading* zero of the reversed half and silently vanishes; 100 and 1000 fool it the same way.\n\n0 and 7 are palindromes and correctly return true, and 1221 stops with x = 12, half = 12.\n\n**Takeaway:** a positive number ending in 0 can never be a palindrome (it would have to start with 0), so reject it up front with `if (x % 10 == 0 && x != 0) return false;`."
+    },
+    {
+      "q": "Reverse Integer must return 0 if the reversed value does not fit in an `int`. The loop body does `rev = rev * 10 + d;`. Which way of detecting overflow is correct?",
+      "options": [
+        "After the update, check whether `rev` changed sign, since overflow flips it",
+        "After the update, check whether `rev` has become greater than `Integer.MAX_VALUE`",
+        "Catch the `ArithmeticException` that Java throws when int multiplication overflows",
+        "Before the update, compare `rev` with `Integer.MAX_VALUE / 10` and `MIN_VALUE / 10`"
+      ],
+      "answer": 3,
+      "why": "Java `int` arithmetic wraps silently, so overflow has to be *prevented*: if `rev > Integer.MAX_VALUE / 10` (or equal to it with d > 7), then `rev * 10 + d` would exceed 2147483647, so return 0 before computing it, and mirror the check for the negative side.\n\nThe sign test is tempting but unreliable: reversing 1534236469 without a guard gives 9646324351, which wraps to the *positive* 1056389759. `rev > Integer.MAX_VALUE` can never be true for an int, and plain `*` and `+` never throw (only `Math.multiplyExact` / `addExact` do).\n\n**Takeaway:** check against `MAX_VALUE / 10` before multiplying, or do the arithmetic in a `long` and range-check at the end."
+    },
+    {
+      "q": "Highest Occurring Element: return the value with the largest count, breaking ties by the **smallest** value. What does this print?",
+      "code": "int[] a = {4, 1, 4, 2, 1, 4, 2, 2};\nMap<Integer, Integer> freq = new HashMap<>();\nfor (int x : a) freq.put(x, freq.getOrDefault(x, 0) + 1);\nint best = -1, bestCount = 0;\nfor (int key : freq.keySet()) {\n    int c = freq.get(key);\n    if (c > bestCount || (c == bestCount && key < best)) {\n        best = key;\n        bestCount = c;\n    }\n}\nSystem.out.println(best);",
+      "options": [
+        "2",
+        "4",
+        "3",
+        "1"
+      ],
+      "answer": 0,
+      "why": "The counts are 4 → 3, 2 → 3 and 1 → 2, so 4 and 2 tie for the highest count of 3. On a tie, `c == bestCount && key < best` switches to the smaller key, so the result is 2 whatever order the HashMap iterates in.\n\nPicking 4 (it appears first in the array) ignores the tie-break, and 3 is the *count*, not the element.\n\n**Takeaway:** write the tie rule into the comparison explicitly; never rely on HashMap iteration order to break ties."
+    },
+    {
+      "q": "This method counts the odd numbers in an array. What does it return for `{3, -5, 8, -7, 2}`?",
+      "code": "int countOdd(int[] a) {\n    int count = 0;\n    for (int x : a)\n        if (x % 2 == 1) count++;\n    return count;\n}",
+      "options": [
+        "3",
+        "1",
+        "2",
+        "0"
+      ],
+      "answer": 1,
+      "why": "Java's `%` keeps the sign of the left operand, so `-5 % 2` is `-1`, not `1`, and the same goes for -7. Only 3 passes `x % 2 == 1`, so the method returns 1 even though the array holds three odd numbers (3, -5, -7).\n\nAnswering 3 assumes `%` behaves like mathematical modulo, which is exactly the bug. Fix it with `x % 2 != 0`, or `(x & 1) == 1`, which also works for negatives.\n\n**Takeaway:** in Java, test oddness with `!= 0`, and normalise a remainder with `((x % m) + m) % m` when x can be negative."
+    },
+    {
+      "q": "`goal` is a rotation of `s` if moving some characters from the front of `s` to its back gives `goal` (\"abcde\" → \"cdeab\"). Which check is correct?",
+      "options": [
+        "`(s + s).contains(goal)`, with no length check",
+        "`s.length() == goal.length()` and both have the same character counts",
+        "`s.length() == goal.length() && (s + s).contains(goal)`",
+        "`new StringBuilder(s).reverse().toString().equals(goal)`"
+      ],
+      "answer": 2,
+      "why": "Every rotation of s is a length-n window of `s + s`: for s = \"abcde\", `s + s` = \"abcdeabcde\" contains \"cdeab\" starting at index 2.\n\nThe length check is essential: without it any substring passes, so s = \"abcde\", goal = \"bcd\" would wrongly return true. Equal character counts only prove an anagram (\"acb\" is not a rotation of \"abc\"), and reversing is a different operation.\n\n**Takeaway:** rotation ⇔ same length **and** `goal` occurs in `s + s` (O(n²) worst case with `contains`, O(n) with KMP)."
+    }
+  ],
+  "hard": [
+    {
+      "q": "What does this print? (`Integer.MIN_VALUE` is -2147483648.)",
+      "code": "int n = Integer.MIN_VALUE;\nn = Math.abs(n);\nint count = 0;\nwhile (n > 0) {\n    count++;\n    n /= 10;\n}\nSystem.out.println(count);",
+      "options": [
+        "10",
+        "0",
+        "11",
+        "It throws an ArithmeticException"
+      ],
+      "answer": 1,
+      "why": "+2147483648 does not fit in an `int` (the max is 2147483647), so `Math.abs(Integer.MIN_VALUE)` overflows and returns -2147483648 itself, with no exception. n is still negative, `while (n > 0)` never runs, and the count comes out as 0.\n\nThe tempting 10 is the true digit count, which you only get after widening: `long x = Math.abs((long) n);`.\n\n**Takeaway:** in two's complement the negative range is one larger than the positive range, so negate or `abs` an int only after widening to `long` (or use `Math.absExact` to fail loudly)."
+    },
+    {
+      "q": "2147483647 (`Integer.MAX_VALUE`) is prime. What does `isPrime(Integer.MAX_VALUE)` do with this code?",
+      "code": "boolean isPrime(int n) {\n    if (n < 2) return false;\n    for (int i = 2; i * i <= n; i++)\n        if (n % i == 0) return false;\n    return true;\n}",
+      "options": [
+        "Returns false after ~2.1 billion iterations, since `i * i` wraps around",
+        "Returns true after about 46,000 iterations, as the √n bound promises",
+        "Throws an ArithmeticException as soon as `i * i` overflows past MAX_VALUE",
+        "Never returns, because `i * i <= n` is true for every possible int i"
+      ],
+      "answer": 0,
+      "why": "√2147483647 ≈ 46340.95, so the loop should stop at i = 46341, but 46341 × 46341 = 2147488281 overflows to -2147479015, which is <= n. In fact every int is <= `Integer.MAX_VALUE`, so the condition can never become false.\n\n\"Never returns\" is tempting, but the loop keeps going until i reaches n itself, where `n % i == 0` fires `return false`: a prime reported as composite after 2,147,483,646 iterations.\n\n**Takeaway:** write the bound as `(long) i * i <= n` or `i <= n / i` so it cannot overflow."
+    },
+    {
+      "q": "This isomorphic-strings check keeps only one map, from characters of `s` to characters of `t`. For which pair does it give the **wrong** answer?",
+      "code": "boolean isIsomorphic(String s, String t) {\n    if (s.length() != t.length()) return false;\n    Map<Character, Character> map = new HashMap<>();\n    for (int i = 0; i < s.length(); i++) {\n        char a = s.charAt(i), b = t.charAt(i);\n        if (map.containsKey(a)) {\n            if (map.get(a) != b) return false;\n        } else {\n            map.put(a, b);\n        }\n    }\n    return true;\n}",
+      "options": [
+        "s = \"egg\", t = \"add\"",
+        "s = \"foo\", t = \"bar\"",
+        "s = \"paper\", t = \"title\"",
+        "s = \"badc\", t = \"baba\""
+      ],
+      "answer": 3,
+      "why": "Isomorphic means a one-to-one mapping: no s-character maps to two t-characters **and** no two s-characters map to the same t-character. For \"badc\" → \"baba\" the map becomes b→b, a→a, d→b, c→a, which is consistent from the s side, so the code returns true. But t's 'b' is the image of both 'b' and 'd', so the right answer is false.\n\nThe other pairs come out correctly: egg/add and paper/title are isomorphic, and foo/bar fails on o→a then o→r.\n\n**Takeaway:** check both directions, with two maps, two `int[256]` arrays, or one map plus a set of already-used targets."
+    },
+    {
+      "q": "Longest Common Prefix trick: sort the strings lexicographically, then return the common prefix of only the **first** and **last** strings. Why is that enough?",
+      "options": [
+        "Sorting moves the two shortest strings to the ends, and they bound the prefix",
+        "After sorting, the first and last strings are the most similar pair",
+        "Any prefix the first and last share is shared by every string between them",
+        "Sorting groups strings by length, so the middle ones are always longer"
+      ],
+      "answer": 2,
+      "why": "Lexicographic order compares the first character, then the second, and so on. If the first and last strings both start with prefix P, every string between them must also start with P, otherwise it would sort before the first or after the last. For [\"flower\", \"flow\", \"flight\"] the sorted order is [\"flight\", \"flow\", \"flower\"], and \"flight\" vs \"flower\" gives \"fl\".\n\n\"Most similar pair\" is backwards: the ends are the *least* similar pair, which is exactly why whatever they share, everyone shares. Sorting is by characters, not by length.\n\n**Takeaway:** the sort costs O(k · L · log k) for k strings of length L, versus O(k · L) for a column-by-column scan, but the invariant is a neat one to explain."
+    },
+    {
+      "q": "Euclid's algorithm `gcd(a, b) = gcd(b, a % b)` takes O(log min(a, b)) steps. Among these pairs (all ≤ 100), which one makes it take the **most** steps?",
+      "options": [
+        "89 and 55, two consecutive Fibonacci numbers",
+        "97 and 89, the two largest primes below 100",
+        "100 and 50, the largest number and its half",
+        "99 and 98, two large consecutive integers"
+      ],
+      "answer": 0,
+      "why": "(89, 55) → (55, 34) → (34, 21) → (21, 13) → (13, 8) → (8, 5) → (5, 3) → (3, 2) → (2, 1) → (1, 0): nine steps, the maximum for any pair up to 100. A step shrinks the numbers least when the quotient is 1, and consecutive Fibonacci numbers give quotient 1 every single time.\n\nPrimes are not special: (97, 89) → (89, 8) → (8, 1) → (1, 0) is 3 steps, and (99, 98) is 2 because 99 % 98 = 1.\n\n**Takeaway:** Fibonacci numbers grow like 1.618ⁿ, so even the worst case needs only about log₁.₆₁₈(min) steps. That is why gcd is O(log min(a, b))."
+    }
+  ]
+}

@@ -1,0 +1,158 @@
+{
+  "easy": [
+    {
+      "q": "In KMP, what does `lps[i]` store for a pattern `p`?",
+      "options": [
+        "The length of the longest common prefix of p and its suffix p.substring(i)",
+        "The length of the longest proper prefix of p[0..i] that is also a suffix of p[0..i]",
+        "The length of the longest palindrome that ends exactly at index i of p",
+        "The length of the longest substring of p[0..i] that occurs in it at least twice"
+      ],
+      "answer": 1,
+      "why": "`lps[i]` is the longest **proper** prefix of `p[0..i]` that is also a suffix of it (a \"border\"). Proper means it cannot be the whole of `p[0..i]`, so `lps[0] = 0`. For `\"abab\"`, `lps[3] = 2` because `\"ab\"` is both a prefix and a suffix.\n\nThe first option is the definition of the **Z-function**, the other classic linear-time array, and the two are easy to mix up. KMP needs borders because after matching `j` characters and hitting a mismatch, the longest border of `p[0..j-1]` is exactly how much of the pattern is still known to match.\n\nTakeaway: LPS = a prefix that is also a suffix, ending at i; Z = a match with the prefix, starting at i."
+    },
+    {
+      "q": "What is the LPS (prefix function) array of `\"aabaa\"`?",
+      "options": [
+        "[0, 1, 0, 1, 1]",
+        "[1, 2, 0, 1, 2]",
+        "[0, 1, 0, 1, 2]",
+        "[0, 0, 0, 1, 2]"
+      ],
+      "answer": 2,
+      "why": "Go prefix by prefix: `\"a\"` has no proper border (0); `\"aa\"` has border `\"a\"` (1); `\"aab\"` ends in `b`, which no prefix starting with `a` can match (0); `\"aaba\"` has border `\"a\"` (1); `\"aabaa\"` has border `\"aa\"` (2). So the array is **[0, 1, 0, 1, 2]**.\n\n[1, 2, 0, 1, 2] counts each prefix as its own border, which LPS forbids. [0, 1, 0, 1, 1] forgets to extend: at i = 4, `len = 1` and `p[4] == p[1]`, so the border grows to 2. [0, 0, 0, 1, 2] misses that `\"aa\"` already has the border `\"a\"`.\n\nTakeaway: each step either extends the previous border by one character or falls back to a shorter border and tries again."
+    },
+    {
+      "q": "What is the Z-array of `\"aabxaab\"`, with `z[0]` left as 0 as in the notes' code?",
+      "options": [
+        "[0, 1, 0, 0, 3, 1, 0]",
+        "[0, 1, 0, 0, 1, 2, 3]",
+        "[0, 1, 0, 0, 3, 0, 0]",
+        "[0, 0, 0, 0, 3, 1, 0]"
+      ],
+      "answer": 0,
+      "why": "`z[i]` is the length of the longest common prefix of `s` and `s.substring(i)`. At i = 1, `\"abxaab\"` shares `\"a\"` with the start (1); at i = 2 and 3, `b` and `x` don't match `a` (0); at i = 4, `\"aab\"` matches the first three characters before the string ends (3); at i = 5, `\"ab\"` shares only `\"a\"` (1); at i = 6, `\"b\"` gives 0.\n\n[0, 1, 0, 0, 1, 2, 3] is the **LPS** array of the same string: LPS measures borders ending at i, Z measures prefix matches starting at i. [0, 1, 0, 0, 3, 0, 0] forgets that position 5 starts with `a`.\n\nTakeaway: read each Z value as \"how far does the string's prefix match if I start here?\"."
+    },
+    {
+      "q": "In Rabin-Karp, when the window hash equals the pattern hash, the code still calls `text.regionMatches(...)` before reporting a match. Why?",
+      "options": [
+        "The rolling update loses precision, so equal strings may end up with slightly different hashes",
+        "Equal strings can hash differently after the modulo, so the comparison confirms the hash",
+        "The comparison is only needed when the pattern contains repeated characters",
+        "Different strings can share a hash (a collision), so equal hashes do not prove equal text"
+      ],
+      "answer": 3,
+      "why": "A hash maps a huge number of possible strings onto at most MOD values, so two different windows can collide. Equal strings always get equal hashes (the hash is exact integer math on the same characters), so a hash *mismatch* safely skips a window, but a hash *match* only means \"probably equal\" and needs an O(m) check.\n\nThat check is also where the worst case comes from: if many windows collide, each costs O(m), and the total degrades to O(n·m), while the expected time stays O(n + m). Repeated characters in the pattern have nothing to do with it.\n\nTakeaway: hashes prove inequality for free and equality only after verification (or with double hashing to make collisions very unlikely)."
+    },
+    {
+      "q": "KMP searches a text of length n for a pattern of length m. What are its worst-case time and extra space?",
+      "options": [
+        "O(n · m) time in the worst case, O(1) extra space",
+        "O(n + m) time, O(m) extra space for the LPS array",
+        "O(n log m) time, O(m) extra space for the LPS array",
+        "O(n + m) time on average, O(n · m) on adversarial text"
+      ],
+      "answer": 1,
+      "why": "Building the LPS array takes O(m), and the search loop never moves the text index backwards, so the total is **O(n + m)** even on the worst inputs, with O(m) extra space for `lps`.\n\nO(n · m) is the naive search, which restarts the comparison at the next text position after every mismatch. \"Fast on average, slow on adversarial input\" describes Rabin-Karp (hash collisions), not KMP, whose guarantee is deterministic.\n\nTakeaway: KMP is guaranteed linear because it reuses what the pattern has already matched instead of re-reading the text."
+    }
+  ],
+  "medium": [
+    {
+      "q": "What does `shortestPalindrome(\"abab\")` return? It must add the fewest characters to the **front** of s.",
+      "code": "String shortestPalindrome(String s) {\n    String rev = new StringBuilder(s).reverse().toString();\n    int[] lps = buildLps(s + \"#\" + rev);\n    int palPrefix = lps[lps.length - 1];\n    return rev.substring(0, s.length() - palPrefix) + s;\n}",
+      "options": ["\"bababab\"", "\"ababa\"", "\"babab\"", "\"babaabab\""],
+      "answer": 2,
+      "why": "`s + \"#\" + rev` is `\"abab#baba\"`. Its last LPS value is the longest prefix of `s` that equals a suffix of `rev`, i.e. the longest **palindromic prefix** of `s`: `\"aba\"`, length 3. Only `4 - 3 = 1` character needs mirroring, so the code prepends `rev.substring(0, 1) = \"b\"` and returns **\"babab\"**.\n\n\"ababa\" is a palindrome, but it adds the character at the back, which the problem forbids. \"babaabab\" prepends the whole reverse (always a palindrome, never shorter), and \"bababab\" is what you get if you only find the palindromic prefix `\"a\"`.\n\nTakeaway: fewest characters added in front = n minus the longest palindromic prefix, found in O(n) with KMP on `s + '#' + reverse(s)`."
+    },
+    {
+      "q": "In KMP's search loop, one mismatch can make `j` fall back several times (`j = lps[j - 1]`) while `i` stays put. Why is the loop still O(n) for a text of length n?",
+      "options": [
+        "j grows by at most 1 per step of i and each fall-back lowers it, so fall-backs total at most n",
+        "Each mismatch falls back at most once, because lps[j − 1] always lands on a matching character",
+        "The fall-backs follow a sorted array, so each mismatch costs O(log m) like a binary search",
+        "Each fall-back resets j to 0, so a mismatch costs O(1) no matter how long the pattern is"
+      ],
+      "answer": 0,
+      "why": "Think of `j` as a budget. It only increases in the match branch, by exactly 1, and that branch also advances `i`, so over the whole search `j` increases at most n times. Each fall-back strictly decreases `j`, and `j` never drops below 0, so there are at most n fall-backs in total. Every iteration either advances `i` or falls back: at most 2n iterations.\n\nOne mismatch really can fall back several times: pattern `\"aaaab\"` against text `\"aaaac\"` goes j = 4 → 3 → 2 → 1 → 0 at the `c`. And `j` usually falls to a border rather than to 0, which is the whole point of KMP.\n\nTakeaway: KMP is linear by amortisation (total work bounded by total progress), not because each step is O(1)."
+    },
+    {
+      "q": "Repeated Substring Pattern (is s one block repeated 2+ times?) should be `b > 0 && n % (n - b) == 0` with `b = lps[n - 1]`. Someone writes `b > 0 && n % b == 0` instead. Which input makes the buggy version give the wrong answer?",
+      "options": ["\"abcabc\"", "\"abab\"", "\"abcab\"", "\"ababab\""],
+      "answer": 3,
+      "why": "The candidate block length is the **period** `n - b`, not the border `b`. For `\"ababab\"`, `b = 4` and the period is 2: `6 % 2 == 0`, so the right answer is true (`\"ab\"` × 3), but `6 % 4 != 0`, so the buggy version says false.\n\nFor `\"abcabc\"` (b = 3) and `\"abab\"` (b = 2) the string is exactly two copies, so border and period happen to be equal and both versions agree. For `\"abcab\"` (b = 2, period 3) both correctly say false.\n\nTakeaway: a string with longest border b has smallest period `n - b`, and it is a full repetition exactly when that period divides n. Test with three or more copies, where border and period differ."
+    },
+    {
+      "q": "In the Rabin-Karp rolling update, the `+ MOD` is removed, leaving `ht = (ht - text.charAt(i) * power % MOD) % MOD;`. What is the effect?",
+      "options": [
+        "No effect: Java's % operator always returns a value in [0, MOD)",
+        "Real matches can be missed: whenever ht is negative it cannot equal hp",
+        "An ArithmeticException is thrown as soon as the value turns negative",
+        "Extra false matches appear, but regionMatches filters them all out"
+      ],
+      "answer": 1,
+      "why": "In Java `%` keeps the sign of the left operand (`-7 % 3 == -1`), so once `ht` is smaller than the subtracted term the result is negative. A negative `ht` is congruent to the correct hash mod MOD but is a different `long`, so `hp == ht` fails even when the window equals the pattern. With BASE = 131 and MOD = 10^9 + 7, searching for `\"world\"` in `\"hello world\"` returns -1.\n\nNothing throws, and verification cannot help, because it only runs after the hashes compare equal.\n\nTakeaway: in Java, normalise every subtraction under a modulus with `(x % MOD + MOD) % MOD`."
+    },
+    {
+      "q": "Find the longest substring that occurs at least twice in s (occurrences may overlap), with n up to 3·10^4. Which approach fits?",
+      "options": [
+        "Binary search on the length, testing each length with rolling hashes",
+        "Build the LPS array of s; the answer is the prefix of length lps[n − 1]",
+        "Build the Z-array of s; the answer has length max over i ≥ 1 of z[i]",
+        "A sliding window that shrinks whenever a character repeats inside it"
+      ],
+      "answer": 0,
+      "why": "If a substring of length L occurs twice, so does its prefix of length L − 1, so \"a duplicate of length L exists\" is monotonic in L and can be binary searched. Each check hashes all windows of length L with a rolling hash in O(n) and looks for a repeat in a HashSet (verifying or double-hashing on hits), O(n log n) expected overall.\n\n`lps[n - 1]` only finds a duplicate that is both a prefix and a suffix, and max `z[i]` only finds duplicates of a **prefix**: for `\"banana\"` both give 0, while the answer is `\"ana\"`. The sliding window solves a different problem (longest substring without repeating characters).\n\nTakeaway: \"compare many substrings of one length\" plus a monotonic length is the signal for binary search + rolling hash."
+    }
+  ],
+  "hard": [
+    {
+      "q": "The `\"#\"` separator is dropped from shortestPalindrome. What happens for `s = \"aaa\"`?",
+      "code": "String shortestPalindrome(String s) {\n    String rev = new StringBuilder(s).reverse().toString();\n    int[] lps = buildLps(s + rev);                // no \"#\"\n    int palPrefix = lps[lps.length - 1];\n    return rev.substring(0, s.length() - palPrefix) + s;\n}",
+      "options": [
+        "Returns \"aaa\" correctly, since s is already a palindrome",
+        "Returns \"aaaaaa\", since the border covers all of s + rev",
+        "Throws StringIndexOutOfBoundsException: the border is longer than s",
+        "Returns \"aaaa\", since one extra character is prepended by mistake"
+      ],
+      "answer": 2,
+      "why": "`\"aaaaaa\"` has LPS `[0, 1, 2, 3, 4, 5]`, so `palPrefix = 5`, longer than `s` itself. Then `s.length() - palPrefix = -2`, and `rev.substring(0, -2)` throws `StringIndexOutOfBoundsException`.\n\nWithout a separator, a border of `s + rev` can run across the middle, so its length is no longer capped at n. With `\"#\"` (a character in neither string) no border can cross it, so it is at most n and equals the longest palindromic prefix. Any border of length ≤ n is still a real palindromic prefix, so the separator-free version is either right or crashes, and strings like `\"aaa\"` crash.\n\nTakeaway: the separator in `s + '#' + t` (and in Z-search's `pat + '$' + text`) caps every match at the length of the first part."
+    },
+    {
+      "q": "The Z-function's inner `while` loop extends `z[i]` one character at a time. Why is the whole algorithm still O(n)?",
+      "code": "int[] zFunction(String s) {\n    int n = s.length();\n    int[] z = new int[n];\n    for (int i = 1, l = 0, r = 0; i < n; i++) {\n        if (i < r) z[i] = Math.min(r - i, z[i - l]);\n        while (i + z[i] < n && s.charAt(z[i]) == s.charAt(i + z[i])) z[i]++;\n        if (i + z[i] > r) { l = i; r = i + z[i]; }\n    }\n    return z;\n}",
+      "options": [
+        "The inner loop runs at most once per i, because the copied z[i − l] is always exact",
+        "The box [l, r) halves the remaining work at every i, so the total is a geometric series",
+        "It is O(n log n) rather than O(n), because each min() is followed by a short extension",
+        "Every successful comparison pushes r one step to the right, and r never exceeds n"
+      ],
+      "answer": 3,
+      "why": "If `i >= r`, the extension starts beyond everything matched so far, so each successful comparison pushes `i + z[i]` past `r`, and `r` is then moved there. If `i < r` and `z[i - l] < r - i`, the copied value is exact and the first comparison fails at once, O(1). If the copied value reaches `r - i`, comparisons start at `r`, and again each success extends `r`.\n\n`r` only increases and is at most n, so there are at most n successful comparisons overall, plus at most one failed comparison per i: O(n). The copied value is exact only when it ends strictly inside the box; at the edge it is just a lower bound, which is why the loop exists.\n\nTakeaway: like KMP, the Z algorithm is linear by amortisation over a pointer (`r`) that only moves forward."
+    },
+    {
+      "q": "This counts occurrences of `pat` in `text` with KMP, but after a full match it resets `j = 0`. What does it return for `text = \"abababa\"`, `pat = \"aba\"`?",
+      "code": "int count(String text, String pat) {\n    int[] lps = buildLps(pat);\n    int count = 0;\n    for (int i = 0, j = 0; i < text.length(); ) {\n        if (text.charAt(i) == pat.charAt(j)) {\n            i++;\n            j++;\n            if (j == pat.length()) { count++; j = 0; }\n        } else if (j > 0) j = lps[j - 1];\n        else i++;\n    }\n    return count;\n}",
+      "options": ["3", "2", "1", "4"],
+      "answer": 1,
+      "why": "The occurrences start at 0, 2 and 4, and they overlap: each shares its last `a` with the next one. After the first match `i = 3`, and resetting `j = 0` throws away the trailing `\"a\"` that starts the next match. From `i = 3` the remaining text `\"baba\"` contains only the match at index 4, so the method returns **2**.\n\nThe fix is `j = lps[j - 1]`: the LPS of `\"aba\"` is `[0, 0, 1]`, so `j` becomes 1, keeping the `\"a\"`, and the count becomes 3.\n\nTakeaway: after a full match, fall back to the border exactly as after a mismatch, or overlapping matches are lost."
+    },
+    {
+      "q": "To make collisions rarer, someone changes MOD in the prefix-hash code to `1_000_000_000_000_000_003L` (about 10^18), keeping `long` arithmetic. What goes wrong?",
+      "code": "h[i + 1] = (h[i] * BASE + s.charAt(i)) % MOD;\npw[i + 1] = pw[i] * BASE % MOD;\n\nlong hash(int l, int r) {\n    return ((h[r] - h[l] * pw[r - l]) % MOD + MOD) % MOD;\n}",
+      "options": [
+        "Products like h[l] * pw[r − l] can reach about 10^36 and silently overflow long",
+        "Nothing: a larger modulus just means fewer collisions, at no extra cost",
+        "Java throws ArithmeticException when the long multiplication overflows",
+        "Only the subtraction can go negative, and the + MOD already handles that"
+      ],
+      "answer": 0,
+      "why": "With a modulus near 10^18, stored values are also up to 10^18, so `h[l] * pw[r - l]` can be around 10^36, far beyond `Long.MAX_VALUE ≈ 9.2·10^18`; even `h[i] * BASE` overflows. Java's `long` multiplication wraps around silently (only `Math.multiplyExact` throws), so the hashes become garbage and equal substrings at different positions get different hashes.\n\nA modulus is safe only if `(MOD - 1)²` fits in a `long`, i.e. MOD below about 3·10^9. The standard way to cut collisions is **double hashing**: two independent ~10^9 moduli compared as a pair.\n\nTakeaway: choose the modulus so that the product of two reduced values cannot overflow, and get extra safety from a second hash, not a bigger modulus."
+    },
+    {
+      "q": "For `s = \"abcabcab\"` the LPS array ends with `lps[7] = 5`. What is the shortest string t such that s is a prefix of `t + t + t + ...`?",
+      "options": ["\"abcab\"", "\"abcabcab\"", "\"abc\"", "\"ab\""],
+      "answer": 2,
+      "why": "If s has a border of length b, then `s[i] == s[i + (n - b)]` for every valid i, so `n - b` is a period of s, and the longest border gives the **smallest** period: `8 - 5 = 3`, so t = **\"abc\"** (`\"abc\" + \"abc\" + \"ab...\"` reproduces s).\n\n\"abcab\" is the border itself, not the period, and \"ab\" fails at index 2 (`c != a`). Repeated Substring Pattern returns false for this s, because 3 does not divide 8: s has period 3 but is not a whole number of copies. \"abcabcab\" would be the answer only if t had to tile s exactly.\n\nTakeaway: `n - lps[n - 1]` is always the smallest period; it is a full repetition only when it divides n."
+    }
+  ]
+}

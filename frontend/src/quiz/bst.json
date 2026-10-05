@@ -1,0 +1,183 @@
+{
+  "easy": [
+    {
+      "q": "Which of these trees (LeetCode level-order format) is a valid binary search tree?",
+      "options": [
+        "`[8,3,10,1,9,null,14]`",
+        "`[8,3,10,1,6,9,14]`",
+        "`[8,3,10,1,6,7,14]`",
+        "`[8,3,10,4,1,9,14]`"
+      ],
+      "answer": 1,
+      "why": "The BST rule covers whole subtrees: everything in 8's left subtree must be < 8 and everything in its right subtree > 8, and the same holds at every node. `[8,3,10,1,6,9,14]` passes: its inorder is 1 3 6 8 9 10 14, strictly increasing.\n\nIn `[8,3,10,1,9,null,14]`, 9 is 3's right child (fine locally, 9 > 3), but it sits in 8's left subtree and 9 > 8. In `[8,3,10,1,6,7,14]`, 7 is 10's left child (7 < 10), but it sits in 8's right subtree and 7 < 8. `[8,3,10,4,1,9,14]` breaks even the local rule: 4 is the left child of 3.\n\nTakeaway: every node must lie inside the (low, high) range set by all of its ancestors, not just be on the right side of its parent; equivalently, the inorder must be strictly increasing."
+    },
+    {
+      "q": "You insert 10, 20, 30, 40, 50 in that order into an empty BST using the plain recursive insert (no balancing). What is the height, counted in nodes, and how fast is searching for 50?",
+      "options": [
+        "Height 3; O(log n), since each comparison halves the remaining values",
+        "Height 3; O(log n), because insert keeps the tree roughly balanced",
+        "Height 5; O(n), because the tree has become a right-leaning chain",
+        "Height 5; O(log n), because search still discards one side per step"
+      ],
+      "answer": 2,
+      "why": "Each new value is larger than everything already in the tree, so it always goes right: 10 → 20 → 30 → 40 → 50 is a chain of height 5, effectively a linked list. Searching for 50 compares against all 5 nodes, so search is O(h) = O(n) here.\n\n'Discards one side per step' only helps when both sides are similar in size; in a chain the discarded side is empty every time. A plain BST never rebalances. Self-balancing trees (AVL, red-black, which is what Java's `TreeMap` and `TreeSet` use) exist to guarantee h = O(log n).\n\nTakeaway: BST operations are O(h), and h is only log n when the tree is balanced; sorted input is the worst case."
+    },
+    {
+      "q": "What does this `ceil` (smallest value >= x) return for x = 5 on the BST `[8,3,10,1,6,null,14,null,null,4,7,13]`? In LeetCode level-order format: 8 has children 3 and 10, 3 has children 1 and 6, 6 has children 4 and 7, 10 has a right child 14, and 14 has a left child 13.",
+      "code": "int ceil(TreeNode root, int x) {\n    int ans = -1;\n    while (root != null) {\n        if (root.val == x) return x;\n        if (root.val > x) { ans = root.val; root = root.left; }\n        else root = root.right;\n    }\n    return ans;\n}",
+      "options": [
+        "8",
+        "4",
+        "7",
+        "6"
+      ],
+      "answer": 3,
+      "why": "Trace: at 8, 8 > 5, so 8 is a candidate and we go left to look for a smaller one that still works. At 3, 3 < 5 is too small, so go right. At 6, 6 > 5, so the candidate improves to 6 and we go left. At 4, too small, go right, which is null. The last saved candidate is 6.\n\n8 is what you get if you stop at the first candidate; moving left after saving a candidate is how the walk finds a tighter one. 4 is the floor (largest value <= 5), the mirror-image walk, and 7 is larger than 5 but not the smallest such value.\n\nTakeaway: floor and ceil are binary search down the tree, saving a candidate each time you step away from it. O(h) time, O(1) space."
+    },
+    {
+      "q": "When deleting a node with **two** children, the standard method copies in its inorder successor (the smallest value in its right subtree) and then deletes that successor. Why is the successor a safe choice?",
+      "options": [
+        "It keeps the BST order and has no left child, so removing it is easy",
+        "It is always a leaf, so removing it afterwards never needs another case",
+        "It is always the right child, so only one pointer changes when it moves up",
+        "It is the deepest node, so moving it up keeps the tree balanced"
+      ],
+      "answer": 0,
+      "why": "The successor s is the next value after the deleted key in sorted order. Every left-subtree value is smaller than the key, hence smaller than s, and every other right-subtree value is larger than s (s is the minimum there). So writing s's value into the node keeps the BST property. s has no left child (that child would be even smaller), so deleting it is the easy zero-or-one-child case.\n\nIt is **not** always a leaf: in `[5,3,8,null,null,6,9,null,7]`, deleting 5 uses successor 6, which still has a right child 7 that must be spliced up into 6's place. The right child is the successor only when it has no left child.\n\nTakeaway: two-child delete means copy the successor (or the predecessor, the max of the left subtree) and then delete that node from its subtree. O(h) overall."
+    },
+    {
+      "q": "You need the k-th **largest** value in a BST and want to stop as soon as you reach it, without copying every value into a list. Which visiting order should you use?",
+      "options": [
+        "Inorder (left, node, right), stopping at the k-th node visited",
+        "Reverse inorder (right, node, left), stopping at the k-th node visited",
+        "Preorder (node, left, right), stopping at the k-th node visited",
+        "Level order from the root, stopping at the k-th node visited"
+      ],
+      "answer": 1,
+      "why": "Inorder visits a BST's values in ascending order, so swapping the children (right subtree, node, left subtree) visits them in descending order. The k-th node visited is then the k-th largest, and you can stop right there.\n\nPlain inorder stopping at k gives the k-th **smallest**; you could ask for position n - k + 1 instead, but that needs n first. Preorder and level order follow the tree's shape, not sorted order: in `[5,3,8]` level order visits 5 first, which is the 2nd largest.\n\nTakeaway: 'k-th, sorted, next larger' on a BST means inorder or reverse inorder. With an iterative stack and an early stop it costs O(h + k) time and O(h) space."
+    }
+  ],
+  "medium": [
+    {
+      "q": "This validator compares each node only with its direct children. What does it return for `[5,4,6,null,null,3,7]` (LeetCode level-order format: 5 has children 4 and 6, and 6 has children 3 and 7), and is that right?",
+      "code": "boolean isValid(TreeNode n) {\n    if (n == null) return true;\n    if (n.left != null && n.left.val >= n.val) return false;\n    if (n.right != null && n.right.val <= n.val) return false;\n    return isValid(n.left) && isValid(n.right);\n}",
+      "options": [
+        "false, which is correct: 3 is smaller than its parent 6",
+        "true, which is correct: every parent-child pair is ordered",
+        "true, which is wrong: 3 is in 5's right subtree but 3 < 5",
+        "false, which is wrong: the tree is actually a valid BST"
+      ],
+      "answer": 2,
+      "why": "Every check here is local: 4 < 5 and 6 > 5 at the root, 3 < 6 and 7 > 6 at node 6, so it returns true. But 3 is in 5's right subtree, where every value must be > 5, so the tree is not a BST; its inorder `4 5 3 6 7` is not sorted.\n\nThe 'false, 3 < 6' option misreads the rule: 3 is 6's **left** child, so being smaller is exactly what is required there. Fix: pass an allowed range down the recursion, `valid(n.left, lo, n.val)` and `valid(n.right, n.val, hi)`, or check that the inorder is strictly increasing.\n\nTakeaway: the BST property constrains a node by all of its ancestors, not just its parent."
+    },
+    {
+      "q": "This range validator uses `int` bounds. For which input (LeetCode level-order format) does it return the **wrong** answer?",
+      "code": "boolean isValidBST(TreeNode root) {\n    return valid(root, Integer.MIN_VALUE, Integer.MAX_VALUE);\n}\nboolean valid(TreeNode n, int lo, int hi) {\n    if (n == null) return true;\n    if (n.val <= lo || n.val >= hi) return false;\n    return valid(n.left, lo, n.val) && valid(n.right, n.val, hi);\n}",
+      "options": [
+        "`[2147483647]`",
+        "`[-2147483647]`",
+        "`[2,1,3]`",
+        "`[5,1,4,null,null,3,6]`"
+      ],
+      "answer": 0,
+      "why": "A single node holding `Integer.MAX_VALUE` (2147483647) is a valid BST, but `n.val >= hi` checks 2147483647 >= 2147483647 and returns false. The sentinels were meant to mean 'no limit', yet they are legal node values, so they collide with real data.\n\n`[-2147483647]` is fine: it is one above `Integer.MIN_VALUE`, so `n.val <= lo` is false. `[2,1,3]` is correctly true, and `[5,1,4,null,null,3,6]` is correctly false (4 is in 5's right subtree).\n\nFix: use `long` bounds (`Long.MIN_VALUE`, `Long.MAX_VALUE`) or nullable `Integer` bounds where null means unbounded. Takeaway: when a sentinel can equal real input, widen the type or use null."
+    },
+    {
+      "q": "In the BST `[6,2,8,0,4,7,9,null,null,3,5]` (LeetCode level-order format: 2 has children 0 and 4, and 4 has children 3 and 5), what does this LCA return for p = node 0 and q = node 5?",
+      "code": "TreeNode lca(TreeNode root, TreeNode p, TreeNode q) {\n    while (root != null) {\n        if (p.val < root.val && q.val < root.val) root = root.left;\n        else if (p.val > root.val && q.val > root.val) root = root.right;\n        else return root;\n    }\n    return null;\n}",
+      "options": [
+        "Node 6",
+        "Node 4",
+        "Node 0",
+        "Node 2"
+      ],
+      "answer": 3,
+      "why": "At 6, both 0 and 5 are smaller, so both lie in the left subtree: move left. At 2, 0 < 2 but 5 > 2, so p and q are on different sides. That is the first node where their paths from the root split, which makes 2 the lowest common ancestor.\n\n6 is a common ancestor but not the lowest one. 4 is 5's parent, but 0 is not under it.\n\nBecause the values tell you which side each node is on, the walk follows a single path: O(h) time and O(1) space, versus O(n) for the general binary-tree LCA that has to search both subtrees. Takeaway: in a BST the LCA is the first node on the root's path whose value lies between p and q (inclusive)."
+    },
+    {
+      "q": "This BST iterator returns values in ascending order. With n nodes and height h, what is the cost of `next()` and how much memory does the iterator use?",
+      "code": "class BSTIterator {\n    private final Deque<TreeNode> st = new ArrayDeque<>();\n    public BSTIterator(TreeNode root) { pushLeft(root); }\n    public int next() {\n        TreeNode n = st.pop();\n        pushLeft(n.right);\n        return n.val;\n    }\n    public boolean hasNext() { return !st.isEmpty(); }\n    private void pushLeft(TreeNode n) { for (; n != null; n = n.left) st.push(n); }\n}",
+      "options": [
+        "O(1) worst case per call, O(n) memory",
+        "O(1) amortised per call, O(h) memory",
+        "O(h) amortised per call, O(h) memory",
+        "O(log n) per call, O(1) memory"
+      ],
+      "answer": 1,
+      "why": "A single `next()` may push a whole left spine, so one call can cost O(h). But each node is pushed exactly once and popped exactly once over a full iteration, so n calls do O(n) work in total: O(1) amortised per call.\n\nThe stack only holds nodes from one root-to-node path (ancestors whose right side hasn't been reached yet), so memory is O(h), not O(n) as when you copy the inorder into a list. 'O(1) worst case' is wrong because of that occasional spine push.\n\nTakeaway: a step-by-step inorder with a stack gives a lazy sorted iterator in O(h) space; two-sum on a BST uses one ascending and one descending iterator built this way."
+    },
+    {
+      "q": "This finds the inorder successor (next larger value) of node p without parent pointers. In the BST `[20,8,22,4,12,null,null,null,null,10,14]` (LeetCode level-order format: 8 has children 4 and 12, and 12 has children 10 and 14), what is the successor of 14?",
+      "code": "TreeNode inorderSuccessor(TreeNode root, TreeNode p) {\n    TreeNode succ = null;\n    while (root != null) {\n        if (p.val < root.val) { succ = root; root = root.left; }\n        else root = root.right;\n    }\n    return succ;\n}",
+      "options": [
+        "20",
+        "12",
+        "22",
+        "null"
+      ],
+      "answer": 0,
+      "why": "Trace: 14 < 20, so 20 becomes the candidate and we go left. At 8 and then 12, 14 is not smaller, so we go right each time; at 14 itself we go right again and hit null. The last candidate is 20.\n\nThat matches the rule for a node with no right subtree: its successor is the nearest ancestor that has it in its **left** subtree (14 is in 20's left subtree, but in the right subtrees of 8 and 12). 12 is 14's parent but smaller than 14, and null is the answer only for the maximum value, 22.\n\nTakeaway: the successor is the smallest value greater than p, found like a ceil search: O(h) time, O(1) space, no parent pointers needed."
+    }
+  ],
+  "hard": [
+    {
+      "q": "Two values in a BST were swapped by mistake, and its inorder traversal is now `[1, 6, 3, 4, 5, 2, 7]`. Which two values must be swapped back?",
+      "options": [
+        "6 and 3",
+        "5 and 2",
+        "3 and 5",
+        "6 and 2"
+      ],
+      "answer": 3,
+      "why": "Look for inversions, places where a value is bigger than the next one: `6 > 3` and `5 > 2`. With two inversions, the misplaced big value is the **first** element of the first inversion (6) and the misplaced small value is the **second** element of the last inversion (2). Swapping 6 and 2 gives 1 2 3 4 5 6 7.\n\n'6 and 3' fixes only the first inversion and leaves 5 > 2. If the swapped values had been neighbours in sorted order (e.g. `[1, 3, 2, 4]`) there would be only one inversion, and its two elements would be the answer. That is why the code sets `first` once but updates `second` at every inversion.\n\nTakeaway: recovering a BST means finding the inversions in its inorder. O(n) time with O(h) stack, or O(1) space with Morris traversal."
+    },
+    {
+      "q": "Two-sum on a BST walks an ascending and a descending iterator toward each other. A teammate changes the loop condition to `while (!lo.isEmpty() && !hi.isEmpty())`. What does the changed code return for the BST `[5,3,8]` and k = 10?",
+      "code": "Deque<TreeNode> lo = new ArrayDeque<>(), hi = new ArrayDeque<>();\nfor (TreeNode n = root; n != null; n = n.left) lo.push(n);\nfor (TreeNode n = root; n != null; n = n.right) hi.push(n);\nwhile (lo.peek() != hi.peek()) {            // original condition\n    int sum = lo.peek().val + hi.peek().val;\n    if (sum == k) return true;\n    if (sum < k) {\n        TreeNode n = lo.pop();\n        for (n = n.right; n != null; n = n.left) lo.push(n);\n    } else {\n        TreeNode n = hi.pop();\n        for (n = n.left; n != null; n = n.right) hi.push(n);\n    }\n}\nreturn false;",
+      "options": [
+        "false, the same as before: no two values sum to 10",
+        "true, because node 5 ends up paired with itself",
+        "It never stops, because neither stack becomes empty",
+        "It throws, because `peek()` returns null on an empty stack"
+      ],
+      "answer": 1,
+      "why": "Trace: lo's top is 3 and hi's top is 8; 3 + 8 = 11 > 10, so hi advances (pop 8, which has no left child) and hi's top becomes 5. 3 + 5 = 8 < 10, so lo advances (pop 3, which has no right child) and lo's top becomes 5. Now both iterators point at the **same node** 5, and 5 + 5 = 10 returns true, although the only real pairs are 3 + 5, 3 + 8 and 5 + 8.\n\nThe original `lo.peek() != hi.peek()` stops exactly when the two pointers meet; it is the tree version of `i < j` in array two pointers.\n\nTakeaway: two-sum on a BST is two pointers over two lazy inorder iterators, O(n) time and O(h) space, and the pointers must stop when they meet."
+    },
+    {
+      "q": "A subtree here means a node together with **all** of its descendants. How many nodes are in the largest subtree of this binary tree that is a valid BST? (LeetCode level-order `[10,5,15,1,12,11,20]`.)",
+      "code": "          10\n        /    \\\n       5      15\n      / \\    /  \\\n     1  12  11   20",
+      "options": [
+        "7",
+        "4",
+        "3",
+        "6"
+      ],
+      "answer": 2,
+      "why": "Check bottom-up. Each leaf is a BST of size 1. Node 5 with children 1 and 12: left max 1 < 5 < right min 12, so it is a BST of size 3. Node 15 with 11 and 20 is also a BST of size 3. At 10, the left subtree's **max** is 12, which is not < 10, so the whole tree is not a BST, even though every parent-child pair looks fine. That is why 7 is wrong.\n\nThe O(n) algorithm is a postorder where each node returns (min, max, size) of its subtree; an invalid subtree returns an impossible range (min = -∞, max = +∞) so that every ancestor fails too. 6 would be 10, 5, 1, 15, 11, 20, a valid BST only if you drop 12, and 4 would be 10 with just its right side; neither is a subtree, because a subtree must keep every descendant.\n\nTakeaway: 'largest subtree with property X' is postorder with a small summary from each child, O(n), instead of re-validating every subtree in O(n²)."
+    },
+    {
+      "q": "Inserting a BST's preorder values one by one can take O(n²). This recursion rebuilds the BST from its preorder using an upper bound. What is its time complexity for n values?",
+      "code": "private int idx = 0;\nTreeNode build(int[] pre, int bound) {     // first call: bound = Integer.MAX_VALUE\n    if (idx == pre.length || pre[idx] > bound) return null;\n    TreeNode root = new TreeNode(pre[idx++]);\n    root.left = build(pre, root.val);\n    root.right = build(pre, bound);\n    return root;\n}",
+      "options": [
+        "O(n): each value is consumed once and every call does O(1) work",
+        "O(n log n): the same as sorting the preorder to get the inorder",
+        "O(n·h): each value is compared with every ancestor's bound",
+        "O(n²) for a decreasing preorder, like one-by-one insertion"
+      ],
+      "answer": 0,
+      "why": "Every call either creates the node at `pre[idx]` and advances `idx` (n such calls) or returns null immediately. Each created node makes exactly two child calls, so there are 2n + 1 calls in total, each O(1): O(n) time and O(h) recursion stack.\n\nA value is compared only with the one bound passed into the current call, not with every ancestor, so O(n·h) overcounts. It works because a preorder lists the root, then the whole left subtree (all values < root), then the right subtree: as soon as the next value exceeds the current bound, it belongs to some ancestor's right side, so the call returns null and lets that ancestor take it.\n\nTakeaway: a BST is fixed by its preorder alone (sorting it gives the inorder), and the bound trick rebuilds it in one O(n) pass."
+    },
+    {
+      "q": "Your insert sends equal values to the **right** (`if (val < root.val)` go left, otherwise go right). After inserting 5, 3, 5 into an empty tree, what does this strict range validator return?",
+      "code": "boolean valid(TreeNode n, long lo, long hi) {   // called with Long.MIN_VALUE, Long.MAX_VALUE\n    if (n == null) return true;\n    if (n.val <= lo || n.val >= hi) return false;\n    return valid(n.left, lo, n.val) && valid(n.right, n.val, hi);\n}",
+      "options": [
+        "true: the duplicate went right, matching the insert's convention",
+        "false: the second 5 is in the right subtree but not strictly greater",
+        "true: the inorder `3 5 5` is sorted, so the tree is a valid BST",
+        "false: the second 5 was placed in the left subtree, under 3"
+      ],
+      "answer": 1,
+      "why": "Insert sends 3 left of 5, and the second 5 is not < 5, so it goes right: the tree is `[5,3,5]`. The validator checks that right child against the open range (5, +∞); `5 <= 5` triggers `n.val <= lo`, so it returns false.\n\nThe inorder `3 5 5` is non-decreasing but not **strictly** increasing, and strict increase is what this validator demands. Neither function is wrong on its own; they follow different duplicate rules, so the tree one builds is rejected by the other.\n\nTakeaway: choose one duplicate rule (no duplicates, duplicates always on the right with `>=` allowed on that side, or a count stored per node) and apply it in insert, search and validate alike."
+    }
+  ]
+}

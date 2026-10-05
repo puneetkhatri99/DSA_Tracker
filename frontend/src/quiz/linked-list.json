@@ -1,0 +1,180 @@
+{
+  "easy": [
+    {
+      "q": "Which operation is O(1) on a singly linked list (you hold only `head`) but O(n) on an array or `ArrayList` of n elements?",
+      "options": [
+        "Read the element at index k",
+        "Insert a new element at the front",
+        "Append a new element at the end",
+        "Binary search for a value in sorted data"
+      ],
+      "answer": 1,
+      "why": "Inserting at the front of a list is `head = new ListNode(x, head)`: one allocation and one pointer change, whatever the length. An array must shift all n elements one slot right to free index 0, so it is O(n).\n\nReading index k is the opposite: O(1) in an array (address arithmetic) but O(k) in a list, because you follow k `next` pointers. Appending is O(n) for a list without a `tail` pointer (you walk to the last node) and amortised O(1) for an `ArrayList`. Binary search needs random access, so a list gains nothing from being sorted.\n\nTakeaway: linked lists win where you already hold a pointer; arrays win at indexing."
+    },
+    {
+      "q": "The iterative reverse below runs on `1 -> 2 -> 3 -> 4`. What do `prev` and `cur` hold after exactly two iterations of the loop?",
+      "code": "ListNode prev = null, cur = head;\nwhile (cur != null) {\n    ListNode next = cur.next;\n    cur.next = prev;\n    prev = cur;\n    cur = next;\n}",
+      "options": [
+        "prev: `1 -> 2 -> null`, cur: `3 -> 4 -> null`",
+        "prev: `2 -> 1 -> 3 -> 4 -> null`, cur: `3 -> 4 -> null`",
+        "prev: `2 -> 1 -> null`, cur: `4 -> null`",
+        "prev: `2 -> 1 -> null`, cur: `3 -> 4 -> null`"
+      ],
+      "answer": 3,
+      "why": "Iteration 1 saves `next = 2`, points 1 at `null`, then sets `prev = 1`, `cur = 2`. Iteration 2 saves `next = 3`, points 2 back at 1, then sets `prev = 2`, `cur = 3`.\n\nSo `prev` heads the reversed part `2 -> 1 -> null` and `cur` heads the untouched rest `3 -> 4 -> null`. The two parts are disconnected, which is exactly why `next` has to be saved before `cur.next` is overwritten. The tempting `2 -> 1 -> 3 -> 4` forgets that the first iteration already set `1.next = null`; `cur` at 4 would mean three iterations.\n\nTakeaway: at every step the list is a reversed prefix (headed by `prev`) plus the remaining suffix (headed by `cur`); when `cur` is `null`, `prev` is the new head."
+    },
+    {
+      "q": "Many linked-list solutions start with `ListNode dummy = new ListNode(0, head)` and end with `return dummy.next`. What problem does the dummy node solve?",
+      "options": [
+        "It gives the head a predecessor, so changes at the head need no special case",
+        "It stores the list's length, so loops can stop without checking for null",
+        "It stops a cycle from forming when nodes are relinked in place",
+        "It keeps the old head reachable so the original list can be restored"
+      ],
+      "answer": 0,
+      "why": "Inserts and deletes are done through the node *before* the target, e.g. `prev.next = prev.next.next`. The real head has no node before it, so without a dummy you need an extra branch for \"the head itself changes\".\n\nWith a dummy in front, every real node has a predecessor and one piece of code handles position 0 too. Because the first real node may now be a different node, you return `dummy.next`, not the old `head`. The dummy's value is never read: it does not hold a length, prevent cycles, or preserve the old order.\n\nTakeaway: whenever the head might change (delete, insert, merge, partition), start with a dummy node."
+    },
+    {
+      "q": "What does this return for `1 -> 2 -> 3 -> 4 -> 5 -> 6` (even length)?",
+      "code": "ListNode slow = head, fast = head;\nwhile (fast != null && fast.next != null) {\n    slow = slow.next;\n    fast = fast.next.next;\n}\nreturn slow;",
+      "options": [
+        "The node with value 3",
+        "The node with value 5",
+        "The node with value 4",
+        "It throws `NullPointerException` on the last step"
+      ],
+      "answer": 2,
+      "why": "Track (slow, fast): (1, 1), then (2, 3), (3, 5), (4, null). After the third step `fast` is `null`, the loop stops, and `slow` is at 4.\n\nFor even lengths this version returns the **second** middle; for odd lengths, the exact middle. It cannot throw: `fast != null` is checked before `fast.next`, and `&&` short-circuits. If you need the *first* middle (for example to split a list for merge sort), start with `fast = head.next`.\n\nTakeaway: fast moves 2 for every 1 step of slow, so slow is halfway when fast runs off the end."
+    },
+    {
+      "q": "In a doubly linked list, `node` has both a `prev` and a `next` neighbour. Which assignments remove it from the list in O(1)?",
+      "options": [
+        "`node.prev.next = node.next; node.next.prev = node;`",
+        "`node.prev.next = node.next; node.next.prev = node.prev;`",
+        "`node.prev = node.next; node.next = node.prev;`",
+        "`node.prev.next = node.next.next; node.next.prev = node.prev.prev;`"
+      ],
+      "answer": 1,
+      "why": "To unlink a node, point its two neighbours at each other: the left neighbour's `next` skips forward to the right neighbour, and the right neighbour's `prev` skips back to the left neighbour.\n\nThe second option fixes only the forward link, so walking backwards still reaches the removed node. The third rewires only `node`'s own fields, so neither neighbour changes and the node is still in the list. The fourth jumps two nodes in each direction and cuts out the neighbours as well.\n\nTakeaway: every DLL insert or delete updates both directions on both neighbours. That is what makes deleting a known node O(1); a singly linked list would first have to find the predecessor."
+    }
+  ],
+  "medium": [
+    {
+      "q": "This is meant to remove the n-th node from the end. What does it return for `1 -> 2 -> 3 -> 4 -> 5` with n = 2?",
+      "code": "ListNode dummy = new ListNode(0, head), fast = dummy, slow = dummy;\nfor (int i = 0; i < n; i++) fast = fast.next;\nwhile (fast != null) {\n    fast = fast.next;\n    slow = slow.next;\n}\nslow.next = slow.next.next;\nreturn dummy.next;",
+      "options": [
+        "`1 -> 2 -> 3 -> 5`",
+        "`1 -> 2 -> 4 -> 5`",
+        "It throws `NullPointerException`",
+        "`1 -> 2 -> 3 -> 4`"
+      ],
+      "answer": 3,
+      "why": "`fast` starts only n = 2 steps ahead of `slow` (at node 2 while `slow` is at the dummy). When `fast` falls off the end, `slow` is n nodes before `null`, which is the target node 4 itself, not the node before it. `slow.next = slow.next.next` then unlinks 4's successor, so 5 disappears.\n\nThe intended result `1 -> 2 -> 3 -> 5` needs a gap of **n + 1** when both start at the dummy (`i <= n`), so `slow` stops just before the target. With n = 1 this buggy version would actually crash: `slow` lands on the last node and `slow.next.next` dereferences `null`.\n\nTakeaway: to delete a node you need its predecessor, so make the gap one larger than n."
+    },
+    {
+      "q": "Two singly linked lists may join and share a common tail (a Y shape). Find the first shared node in O(m + n) time and O(1) extra space.",
+      "options": [
+        "Walk both lists in step from their heads and return the first pair of nodes holding equal values",
+        "Walk two pointers; when one reaches null, restart it at the other list's head; return where they meet",
+        "Put every node of the first list in a `HashSet`, then return the first node of the second list found in it",
+        "Reverse both lists, then walk from the new heads while the nodes match and return the last match"
+      ],
+      "answer": 1,
+      "why": "Pointer `p` walks A then B, pointer `q` walks B then A. Both cover `lenA + lenB` nodes, so after switching they are the same distance from the end and reach the first shared node together (or both reach `null` if there is none).\n\nWalking in step from the heads fails when the lengths differ, and comparing **values** is wrong anyway: different nodes can hold equal values, so compare references with `==`. The `HashSet` idea is correct but uses O(m) extra space. Reversing in place cannot work: after reversing the first list, the shared nodes point back into it, so the second list's structure is already broken.\n\nTakeaway: equalise path lengths by switching lists, and compare node identity, not values."
+    },
+    {
+      "q": "Digits are stored in reverse order (`9 -> 9` means 99). What does this addition return for `l1 = 9 -> 9` and `l2 = 1`?",
+      "code": "ListNode dummy = new ListNode(0), tail = dummy;\nint carry = 0;\nwhile (l1 != null || l2 != null) {\n    int sum = carry;\n    if (l1 != null) { sum += l1.val; l1 = l1.next; }\n    if (l2 != null) { sum += l2.val; l2 = l2.next; }\n    tail.next = new ListNode(sum % 10);\n    tail = tail.next;\n    carry = sum / 10;\n}\nreturn dummy.next;",
+      "options": [
+        "`0 -> 0`",
+        "`0 -> 0 -> 1`",
+        "`1 -> 0 -> 0`",
+        "`0 -> 1`"
+      ],
+      "answer": 0,
+      "why": "99 + 1 = 100, so the right answer is `0 -> 0 -> 1`. Trace: 9 + 1 = 10 writes 0 with carry 1; then 9 + 0 + 1 = 10 writes 0 with carry 1. Now both lists are `null`, the loop ends, and the final carry is silently dropped, giving `0 -> 0`.\n\nThe fix is `while (l1 != null || l2 != null || carry != 0)`, which creates the extra `1` node. `1 -> 0 -> 0` is 100 written most-significant digit first, which is the wrong order for this representation.\n\nTakeaway: digit-by-digit addition must keep looping while there is a carry, not only while there is input."
+    },
+    {
+      "q": "Which plan checks whether a singly linked list is a palindrome in O(n) time and O(1) extra space?",
+      "options": [
+        "Push every value on a stack, then walk the list again comparing each node with a popped value",
+        "Reverse the whole list in place, then compare it node by node with the original list",
+        "Find the middle with slow/fast pointers, reverse the second half in place, compare it with the first half",
+        "Put one pointer at the head and one at the tail and move them toward each other comparing values"
+      ],
+      "answer": 2,
+      "why": "Once slow/fast finds the middle, reversing from there gives a list that walks from the last node backwards. Comparing it with the first half checks `a[i] == a[n-1-i]` in one pass, with no extra memory.\n\nThe stack version is correct but needs O(n) extra space. Reversing the whole list in place destroys the original order, so there is nothing left to compare with unless you copy it (O(n) space). Moving a pointer backwards from the tail needs `prev` links, which a singly linked list does not have.\n\nTakeaway: \"middle + reverse the second half\" is the standard O(1)-space trick; reverse that half back afterwards if the caller expects the list unchanged."
+    },
+    {
+      "q": "Floyd's slow and fast pointers have just met inside a cycle. How do you get the cycle's length C?",
+      "options": [
+        "Return the number of steps slow took from the head to the meeting node",
+        "Keep one pointer at the meeting node and step the other until it returns, counting the steps",
+        "Return the difference between the steps fast took and the steps slow took",
+        "Restart one pointer at the head and count steps until it meets the other one"
+      ],
+      "answer": 1,
+      "why": "The meeting node is on the cycle, so walking from it until you get back to it goes round exactly once: that count is C.\n\nSlow's step count is L + x (tail length plus distance into the cycle), and fast's extra distance is that same L + x. The analysis only says it is a **multiple** of C. Example: with a 5-node tail and a 3-node cycle they meet after slow has taken 6 steps, which is 2C, not C. Restarting from the head and moving both pointers one step at a time measures L and finds the cycle start, which answers a different question.\n\nTakeaway: to measure the loop, stand on it and walk around once."
+    }
+  ],
+  "hard": [
+    {
+      "q": "Floyd's cycle start: L = steps from head to the cycle start, C = cycle length, x = steps from the start to where slow and fast first meet. Why do a pointer from the head and a pointer from the meeting point, both moving one step at a time, meet exactly at the start?",
+      "options": [
+        "Slow walked L + x and fast walked 2(L + x), so L + x is a whole number of laps; L steps from the meeting point end at the start",
+        "Fast is exactly one lap ahead when they meet, so L = C − x, and the second walk always ends within one lap of the cycle",
+        "Slow and fast always meet x = L steps past the start, so the head and the meeting point are equally far from the start",
+        "The first meeting always happens at the cycle start itself, so the second walk only confirms it from the head"
+      ],
+      "answer": 0,
+      "why": "Fast covers twice slow's distance, and its extra L + x steps were all spent going round the cycle, so L + x = kC for some k ≥ 1. Then L = kC − x: starting x steps into the cycle and walking L = kC − x more steps ends exactly at the start, after whole laps. The head pointer reaches the start after the same L steps, so they meet there.\n\nThe \"exactly one lap\" claim (k = 1) fails when the tail is longer than the cycle. With L = 5 and C = 3, slow has taken 6 steps when they meet (2 laps' worth), so x = 1; the head pointer needs 5 steps, and in that time the other pointer passes the start once and then reaches it again. The meeting point is generally not the start, and x need not equal L.\n\nTakeaway: the proof only needs L + x to be a **multiple** of C, which is why it works for any tail length."
+    },
+    {
+      "q": "This merge sort picks the middle with `fast = head` instead of `fast = head.next`. What happens when it is called on `2 -> 1`?",
+      "code": "ListNode sortList(ListNode head) {\n    if (head == null || head.next == null) return head;\n    ListNode slow = head, fast = head;\n    while (fast != null && fast.next != null) {\n        slow = slow.next;\n        fast = fast.next.next;\n    }\n    ListNode right = slow.next;\n    slow.next = null;\n    return merge(sortList(head), sortList(right));\n}",
+      "options": [
+        "It returns `1 -> 2`; the halves are only a little less balanced",
+        "It throws `NullPointerException` at `slow.next = null`",
+        "It recurses on `2 -> 1` forever and throws `StackOverflowError`",
+        "It returns `2 -> 1`, because merging with an empty right half changes nothing"
+      ],
+      "answer": 2,
+      "why": "With two nodes the loop runs once: `slow` moves to node 1 (the **second** middle) and `fast` becomes `null`. Then `right = slow.next` is `null`, and `slow.next = null` changes nothing, so the \"left half\" is still the whole `2 -> 1`.\n\n`sortList(head)` is called again on the same two nodes, makes the same split, and recurses until `StackOverflowError`; it never gets as far as merging. Starting with `fast = head.next` stops `slow` at the **first** middle (node 2), the split becomes `2` | `1`, and every call strictly shrinks.\n\nTakeaway: a divide step must make both parts smaller; for even lengths that means cutting after the first middle."
+    },
+    {
+      "q": "This should reverse nodes in groups of k and leave a final group with fewer than k nodes as it is. What does it return for `1 -> 2 -> ... -> 8` with k = 3?",
+      "code": "ListNode reverseK(ListNode head, int k) {\n    ListNode prev = null, cur = head, next = null;\n    int count = 0;\n    while (cur != null && count < k) {\n        next = cur.next;\n        cur.next = prev;\n        prev = cur;\n        cur = next;\n        count++;\n    }\n    if (next != null) head.next = reverseK(next, k);\n    return prev;\n}",
+      "options": [
+        "`3 -> 2 -> 1 -> 6 -> 5 -> 4 -> 7 -> 8`",
+        "`3 -> 2 -> 1 -> 6 -> 5 -> 4`",
+        "`3 -> 2 -> 1 -> 4 -> 5 -> 6 -> 7 -> 8`",
+        "`3 -> 2 -> 1 -> 6 -> 5 -> 4 -> 8 -> 7`"
+      ],
+      "answer": 3,
+      "why": "The first two calls reverse `1 2 3` and `4 5 6`, and `head.next = reverseK(...)` links each old group head (now the group's tail) to the next group's new head, giving `3 2 1 6 5 4`. The third call gets `7 -> 8`. Its loop stops after only 2 nodes because `cur` becomes `null`, but those 2 nodes have already been reversed, so it returns `8 -> 7`.\n\nThat is the bug: the code never checks that k nodes exist **before** reversing. The tail is not lost and later groups are not skipped, because the recursion attaches every group. The fix is to walk k nodes first and return `head` unchanged when fewer than k remain.\n\nTakeaway: in k-group reversal, count first, then reverse, and reconnect the old group head (the new tail) to the next group."
+    },
+    {
+      "q": "O(1)-space clone of a list with `random` pointers: (1) insert each copy `A'` right after `A`, (2) set `A'.random = A.random.next`, (3) unweave the two lists. What goes wrong if steps 2 and 3 are merged into one forward pass?",
+      "options": [
+        "A copy whose random points to a later node gets `null`, since that later copy does not exist yet",
+        "A copy whose random points to an earlier node gets an original node, since that pair was already unwoven",
+        "Nothing goes wrong; merging the passes is a safe way to save one walk over the list",
+        "A copy whose random points to its own node gets the original, since `A.next` changes first"
+      ],
+      "answer": 1,
+      "why": "Step 2 relies on the woven layout: right after every original X sits its copy, so `X.next` is `X'`. In a merged pass, when you reach B whose random is an earlier node A, A has already been unwoven, so `A.next` is A's original successor again. `B'.random` then points into the **original** list (at the node after A).\n\nForward randoms are fine, because all copies were created in step 1, so the `null` option is wrong. A self-pointing random is also fine: `A.random.next` is read while A is still woven, so it is `A'`.\n\nTakeaway: in multi-pass pointer tricks, finish every read that depends on a layout before you start taking that layout apart."
+    },
+    {
+      "q": "The two-pointer intersection code below runs on two lists that do **not** intersect, with lengths 3 and 5. What happens?",
+      "code": "ListNode p = a, q = b;\nwhile (p != q) {\n    p = (p == null) ? b : p.next;\n    q = (q == null) ? a : q.next;\n}\nreturn p;",
+      "options": [
+        "The pointers never become equal, so the loop runs forever",
+        "It throws `NullPointerException` when a pointer at `null` reads `.next`",
+        "Both pointers become `null` on the same move, the 9th, so it returns `null`",
+        "It returns the last node of the shorter list, where the pointers line up"
+      ],
+      "answer": 2,
+      "why": "Each pointer walks its own list, spends one move stepping off the end onto `null`, then switches to the other list. `p` covers 3 nodes + `null` + 5 nodes and `q` covers 5 + `null` + 3, so both land on `null` at move 3 + 5 + 1 = 9, and `null == null` ends the loop.\n\nSo the same code returns `null` when there is no intersection, with no special case. It cannot throw, because `.next` is only read when the pointer is not `null`. It cannot loop forever, because after the switch both pointers are the same distance from the end of their second list. Nodes from different lists are never `==`, so no node is returned.\n\nTakeaway: the shared `null` at the end acts as a meeting point, so \"no intersection\" falls out of the same length-equalising argument."
+    }
+  ]
+}

@@ -1,0 +1,180 @@
+{
+  "easy": [
+    {
+      "q": "This plain recursion for Climbing Stairs (1 or 2 steps at a time) makes about 2.7 million calls for n = 30. What does adding a memo array, checked before recursing, change?",
+      "code": "int ways(int n) {\n    if (n <= 1) return 1;\n    return ways(n - 1) + ways(n - 2);\n}",
+      "options": [
+        "Each `ways(i)` is computed once, so the time drops from exponential to O(n)",
+        "Nothing important: it saves memory, but the number of calls stays the same",
+        "The time drops to O(log n), because half of the calls are skipped at each level",
+        "It removes the recursion, so the stack depth drops from O(n) to O(1)"
+      ],
+      "answer": 0,
+      "why": "`ways(30)` calls `ways(29)` and `ways(28)`, `ways(29)` calls `ways(28)` again, and so on: the same few subproblems are recomputed an exponential number of times (2,692,537 calls for n = 30, over 330 million for n = 40). With a memo, the first call to `ways(i)` stores its answer and every later call returns it in O(1). There are only n + 1 distinct states, each doing O(1) work, so the total is O(n).\n\nMemoisation does **not** remove the recursion: the stack still goes n deep. That is why large n is usually tabulated bottom-up (`dp[i] = dp[i-1] + dp[i-2]`) and then cut down to two variables.\n\nTakeaway: DP = recursion with overlapping subproblems + caching, and its time is roughly (number of states) × (work per state)."
+    },
+    {
+      "q": "House Robber: you can't rob two adjacent houses. The tabulation is `dp[i] = max(dp[i-1], dp[i-2] + nums[i])` and the answer is `dp[n-1]`. What does `dp[i]` mean?",
+      "options": [
+        "The most money from houses 0..i, given that house i is robbed",
+        "The money in house i plus the best total from two houses back",
+        "The most money from houses 0..i, whether or not house i is robbed",
+        "The most money from houses i..n-1, starting the robbery at house i"
+      ],
+      "answer": 2,
+      "why": "The two terms in the transition tell you: `dp[i-1]` is *skip house i* and keep the best of houses 0..i-1, and `dp[i-2] + nums[i]` is *rob house i*, which forces skipping house i-1. Taking the max of both, `dp[i]` is the best total over houses 0..i, with house i robbed or not.\n\nIf `dp[i]` meant \"house i is robbed\", `dp[i-1]` could not be one of its options, and the answer would have to be a max over the whole array instead of `dp[n-1]`. For `[2, 7, 9, 3, 1]` the table is 2, 7, 11, 11, 12, so the answer is 12 (2 + 9 + 1).\n\nTakeaway: write down in words what `dp[i]` means before writing the transition; the transition, base case and final answer all follow from it."
+    },
+    {
+      "q": "A robot starts at the top-left cell and moves only right or down to reach the bottom-right cell, never entering an obstacle. How many different paths are there?",
+      "code": "int[][] g = {\n    {0, 0, 0, 0},\n    {0, 1, 0, 0},   // 1 = obstacle\n    {0, 0, 0, 0}\n};",
+      "options": [
+        "10",
+        "6",
+        "8",
+        "4"
+      ],
+      "answer": 3,
+      "why": "`dp[r][c]` = ways to reach (r, c) = ways from the cell above + ways from the cell to the left, with obstacle cells forced to 0:\n\n```\nrow 0: 1 1 1 1\nrow 1: 1 0 1 2\nrow 2: 1 1 2 4\n```\n\nSo there are 4 paths. 10 is the count without the obstacle (choose which 2 of the 5 moves go down: C(5, 2)), and 6 is the number of paths that pass *through* the obstacle (2 ways to reach it × 3 ways onward), so 10 - 6 = 4 checks out.\n\nTakeaway: fill a grid DP in an order where the top and left cells are ready. An obstacle is just a cell whose count is 0, and the one-row version is `dp[c] += dp[c-1]`, where the old `dp[c]` is the cell above."
+    },
+    {
+      "q": "Subset Sum: n = 100 positive numbers and a target T = 10,000. Trying take/skip for every number explores up to 2^100 subsets. Roughly how much work does the standard DP over `dp[i][s]` (first i numbers, sum s) do?",
+      "options": [
+        "About 2^100 steps, the same as brute force",
+        "About n × T = 10^6 cell updates",
+        "About n^2 = 10^4 cell updates",
+        "About T^2 = 10^8 cell updates"
+      ],
+      "answer": 1,
+      "why": "The state is (item index i, sum s) with 0 ≤ s ≤ T, so there are about n × (T + 1) states, and each does O(1) work (skip: `dp[i-1][s]`, take: `dp[i-1][s - a[i]]`). That is about 10^6 steps.\n\nBrute force is exponential because it never notices that many different subsets of the first i numbers reach the same sum s; the DP merges all of them into one cell. Because the cost depends on the *value* T and not only on n, it is called pseudo-polynomial: with T = 10^12 the table would be hopeless.\n\nTakeaway: DP time = number of states × transitions per state. For knapsack-style problems that is n × capacity, and a 1D array cuts the space to O(T)."
+    },
+    {
+      "q": "Edit Distance: `dp[i][j]` is the minimum number of operations (insert, delete, replace) to turn the first i characters of `a` into the first j characters of `b`. Why is the base case `dp[i][0] = i`?",
+      "options": [
+        "Turning i characters into the empty string takes exactly i insertions",
+        "Every character of `a` needs one replacement before anything can match",
+        "Turning i characters into the empty string takes exactly i deletions",
+        "An empty `b` matches anything, so i is just a large sentinel value"
+      ],
+      "answer": 2,
+      "why": "Row 0 and column 0 stand for empty prefixes. To turn `a[0..i)` (i characters) into an empty string you must delete every one of them, and nothing cheaper exists, so `dp[i][0] = i`. Symmetrically, `dp[0][j] = j`: you build `b[0..j)` from nothing with j insertions.\n\nInsertions only make `a` longer, so they can never reach the empty string; that option has the direction backwards. If the base row and column were left at 0, `minDistance(\"abc\", \"\")` would return 0 instead of 3, and every cell built on them would be too small.\n\nTakeaway: in string DP, index 0 means \"empty prefix\". Work out what it costs to match a prefix against nothing, and the rest of the table is built from there."
+    }
+  ],
+  "medium": [
+    {
+      "q": "Each day you do exactly one of 3 activities, scoring `points[day][act]`, and you may not do the same activity on two consecutive days. To maximise the total, which approach works?",
+      "options": [
+        "`dp[day]` = the best total from day 0 up to and including that day",
+        "`dp[day][last]` = best total up to that day, ending with activity `last`",
+        "Greedy: each day take the highest score that differs from yesterday's activity",
+        "`dp[day][total]` = whether that total is reachable by the end of that day"
+      ],
+      "answer": 1,
+      "why": "The rule links each day to the activity of the day before, so the state must remember it: `dp[d][t] = points[d][t] + max(dp[d-1][p])` over `p != t`, answer `max(dp[n-1][t])`, O(n × 3 × 3) time.\n\n`dp[day]` alone can't tell whether the next activity is allowed, and `dp[day][total]` has the same flaw plus a huge extra dimension. Greedy fails on `points = [[9, 10, 0], [0, 100, 0]]`: it takes 10 on day 0 (activity 1), may not repeat activity 1 on day 1, and ends with 10, while 9 + 100 = 109 is possible.\n\nTakeaway: when a choice depends on an earlier choice, add that earlier choice to the state; the extra dimension is usually tiny (here 3)."
+    },
+    {
+      "q": "This is meant to be a 0/1 subset sum (each number used at most once). What does `canMake(new int[]{3, 5}, 6)` return?",
+      "code": "boolean canMake(int[] a, int target) {\n    boolean[] dp = new boolean[target + 1];\n    dp[0] = true;\n    for (int x : a)\n        for (int s = x; s <= target; s++)\n            dp[s] |= dp[s - x];\n    return dp[target];\n}",
+      "options": [
+        "`true`, because the forward loop lets 3 be used twice",
+        "`false`, since no subset of {3, 5} sums to 6",
+        "`true`, because `dp[1]` gets set while processing 5",
+        "It throws, because `s - x` becomes negative"
+      ],
+      "answer": 0,
+      "why": "Processing x = 3 forwards: s = 3 sets `dp[3] = dp[0] = true`, then s = 6 reads `dp[3]`, which this same 3 has just set, so `dp[6] = true`. That is 6 = 3 + 3, one item used twice.\n\nIn the 1D array, the cells to the left of s hold *this* item's updates when you go forwards (unbounded: reuse allowed) and the *previous* item's values when you go backwards (0/1: each item once). With `for (int s = target; s >= x; s--)` the call returns the correct `false`. The index never goes negative, because s starts at x.\n\nTakeaway: 0/1 knapsack and subset sum loop the capacity **backwards**; unbounded knapsack and coin change loop it **forwards**."
+    },
+    {
+      "q": "Using only insertions and deletions (no replacements), what is the minimum number of operations to turn `\"heap\"` into `\"pea\"`?",
+      "options": [
+        "2",
+        "5",
+        "1",
+        "3"
+      ],
+      "answer": 3,
+      "why": "Keep the longest common subsequence and change everything else. LCS(\"heap\", \"pea\") = 2 (\"ea\"), so delete the other 4 - 2 = 2 letters of \"heap\" (h and p) and insert the 3 - 2 = 1 missing letter of \"pea\": heap → eap → ea → pea, 3 operations = n + m - 2·LCS.\n\n2 is the **edit distance**, which may also *replace* (h → p, then delete the last p); without replacement a mismatch costs a delete plus an insert. 5 = n + m - LCS is the length of the shortest common supersequence, a different question answered by the same table. 1 is just the length difference.\n\nTakeaway: many string problems reduce to LCS. Min inserts + deletes = n + m - 2·LCS, shortest common supersequence = n + m - LCS, min insertions to make a palindrome = n - LPS."
+    },
+    {
+      "q": "Unlimited transactions, holding at most one share at a time, and a fee of 3 is paid on every sale. With `prices = [1, 4, 2, 7]`, what is the maximum profit?",
+      "options": [
+        "8",
+        "2",
+        "3",
+        "6"
+      ],
+      "answer": 2,
+      "why": "Two trades (buy 1 sell 4, buy 2 sell 7) earn 3 + 5 = 8 before fees but pay the fee twice: 8 - 6 = 2. One long trade (buy 1, sell 7) earns 6 - 3 = 3, which is better.\n\nThe state DP finds this without guessing. Day by day, `free = max(free, hold + p - fee)` (rest or sell) and `hold = max(hold, free - p)` (rest or buy); `hold` stays -1 (bought at 1) and `free` becomes 3 on the last day. 8 ignores the fee (it's the no-fee answer), and 6 is the best single trade before paying the fee.\n\nTakeaway: with a fee, adding up every price rise is no longer optimal; the hold / free state machine decides when one long trade beats several short ones."
+    },
+    {
+      "q": "The O(n log n) LIS method keeps a `tails` array. For `a = {2, 5, 3, 7, 1}`, what are the first `len` entries of `tails` when the loop ends?",
+      "code": "int[] tails = new int[a.length];\nint len = 0;\nfor (int x : a) {\n    int lo = 0, hi = len;              // first tails[i] >= x\n    while (lo < hi) {\n        int mid = (lo + hi) >>> 1;\n        if (tails[mid] < x) lo = mid + 1; else hi = mid;\n    }\n    tails[lo] = x;\n    if (lo == len) len++;\n}",
+      "options": [
+        "[1, 3, 7], which is not a subsequence of `a` at all",
+        "[2, 3, 7], an actual increasing subsequence of `a`",
+        "[2, 5, 7], the first increasing subsequence found",
+        "[1, 5, 7], the smallest values seen at each step"
+      ],
+      "answer": 0,
+      "why": "Trace: 2 → [2]; 5 extends → [2, 5]; 3 replaces 5 → [2, 3]; 7 extends → [2, 3, 7]; 1 replaces 2 → [1, 3, 7].\n\n`tails[k]` is the smallest possible last element of an increasing subsequence of length k + 1 seen so far. So `len = 3` is the correct LIS length, but the array mixes elements from different subsequences: 1 comes after 7 in `a`. [2, 3, 7] is a real LIS and was the content one step earlier, which is what makes it tempting.\n\nTakeaway: the binary-search method gives the LIS **length**. To print an actual LIS, use the O(n^2) `dp[i]` + `prev[i]` version, or store indices and parent links."
+    }
+  ],
+  "hard": [
+    {
+      "q": "Burst Balloons: bursting balloon k earns `left × nums[k] × right`, where left and right are its *current* neighbours (1 beyond the ends). The interval DP picks the balloon burst **last** inside the open interval (i, j). Why last and not first?",
+      "options": [
+        "Choosing the first one works equally well; last is just a convention",
+        "Bursting last always gives the larger product, so it is a greedy shortcut",
+        "Choosing last makes the table one-dimensional instead of two-dimensional",
+        "Then k's neighbours are fixed as i and j, so the two sides are independent"
+      ],
+      "answer": 3,
+      "why": "If k goes first, balloons k-1 and k+1 become neighbours, so what the left part earns depends on the order in which the right part is burst: the two halves are no longer separate subproblems.\n\nIf k goes **last** among the balloons strictly between i and j, everything else in (i, j) is already gone, so it earns `a[i] × a[k] × a[j]`, and the balloons in (i, k) only ever see the boundaries i and k (likewise for (k, j)). That gives `dp[i][j] = max over k of dp[i][k] + dp[k][j] + a[i]·a[k]·a[j]`. For `[3, 1, 5]` it yields 35 (burst 1, then 3, then 5), matching brute force. It isn't greedy: every k is tried, and the table is still 2D, O(n^3).\n\nTakeaway: in interval / MCM DP, pick the split so the two sides can't affect each other (\"what happens last\" is often that split) and fill the table by increasing interval length."
+    },
+    {
+      "q": "Stocks with at most k transactions. Inside one day, `buy[t]` is updated with today's `sell[t-1]`, and `sell[t]` then uses the `buy[t]` just changed. Why does this in-place update still give the correct answer?",
+      "code": "int[] buy = new int[k + 1], sell = new int[k + 1];\nArrays.fill(buy, Integer.MIN_VALUE);\nfor (int p : prices)\n    for (int t = 1; t <= k; t++) {\n        buy[t] = Math.max(buy[t], sell[t - 1] - p);\n        sell[t] = Math.max(sell[t], buy[t] + p);   // today's buy[t]\n    }\nreturn sell[k];",
+      "options": [
+        "It doesn't; yesterday's arrays must be copied first, or profit gets double-counted",
+        "Any value mixed in from today is a same-day buy and sell, which adds exactly 0 profit",
+        "It's correct only for k = 1; with more transactions the same-day values overcount",
+        "It's correct only because t runs upwards; looping t downwards would break it"
+      ],
+      "answer": 1,
+      "why": "Look at what a same-day mix means. `buy[t] = sell[t-1] - p` with today's `sell[t-1]` is \"sell at p, then buy back at p\"; `sell[t] = buy[t] + p` with today's `buy[t]` is \"buy at p, then sell at p\". Either way the cash changes by p - p = 0. So every value in the arrays is still the profit of some legal plan (at worst one that wastes a transaction), and every legal plan is still considered: the result can neither exceed nor miss the optimum.\n\nChecked against a yesterday-copy version and a brute force on 20,000 random inputs (k = 1 to 3), it gives identical answers for both directions of the t loop. Copying is the safe default when you can't make this argument: with a cooldown, selling today forbids buying tomorrow, so the note keeps `prevSold`.\n\nTakeaway: an in-place space optimisation is safe when reading \"today's\" value corresponds to a legal move that can't improve the answer; make that argument before dropping the temp copy."
+    },
+    {
+      "q": "This one-row LCS returns 2 for `lcs(\"a\", \"aa\")`, but the answer is 1. What is the correct fix?",
+      "code": "int lcs(String a, String b) {\n    int m = b.length();\n    int[] dp = new int[m + 1];\n    for (int i = 1; i <= a.length(); i++)\n        for (int j = 1; j <= m; j++)\n            dp[j] = a.charAt(i - 1) == b.charAt(j - 1)\n                    ? dp[j - 1] + 1\n                    : Math.max(dp[j], dp[j - 1]);\n    return dp[m];\n}",
+      "options": [
+        "Save each old `dp[j]` before overwriting it and use it as the next diagonal",
+        "Loop j from m down to 1, as in 0/1 knapsack, so `dp[j - 1]` is the previous row",
+        "Fill `dp` with -1 instead of 0 so that cells not yet computed are never used",
+        "Reset `dp[0] = 0` at the start of every row so each row starts from a clean base"
+      ],
+      "answer": 0,
+      "why": "On a match, LCS needs the **diagonal** `dp[i-1][j-1]`, but going left to right, `dp[j - 1]` has already been overwritten with this row's `dp[i][j-1]`. For a = \"a\", b = \"aa\": j = 1 sets dp[1] = 1, then j = 2 matches and uses that new dp[1], giving 2, so the single 'a' is matched twice. The fix keeps a `diag` variable per row:\n\n```java\nint diag = 0;                       // old dp[j-1]\nfor (int j = 1; j <= m; j++) {\n    int old = dp[j];\n    dp[j] = match ? diag + 1 : Math.max(dp[j], dp[j - 1]);\n    diag = old;\n}\n```\n\nLooping j backwards is the tempting knapsack habit and even fixes this example, but then a mismatch reads `dp[j - 1]` from the previous row instead of the current row's left cell: `lcs(\"aa\", \"aba\")` returns 1 instead of 2. `dp[0]` is always 0 already, and -1 changes nothing useful.\n\nTakeaway: when a 1D recurrence needs up, left **and** diagonal, no loop direction gives you all three; save the diagonal explicitly (or keep two rows)."
+    },
+    {
+      "q": "Coin Change II asks for the number of **combinations** of coins (unlimited of each) that make `amount`. For `coins = {1, 2}` and `amount = 4` this code returns 5, but the expected answer is 3. Why?",
+      "code": "int change(int amount, int[] coins) {\n    int[] dp = new int[amount + 1];\n    dp[0] = 1;\n    for (int s = 1; s <= amount; s++)\n        for (int c : coins)\n            if (c <= s) dp[s] += dp[s - c];\n    return dp[amount];\n}",
+      "options": [
+        "`dp[0]` should be 0; seeding it with 1 adds an extra way to every amount",
+        "The inner loop must go backwards so that each coin is used at most once",
+        "With the amount outer, 1+1+2, 1+2+1 and 2+1+1 are counted separately",
+        "The coins must be sorted in descending order before the loops start"
+      ],
+      "answer": 2,
+      "why": "With the amount in the outer loop, `dp[s]` sums over \"the **last** coin is c\" for every c, so one multiset is counted once per ordering: 1+1+1+1, 2+2, and 1+1+2 in 3 orders gives 5, the number of ordered sequences (that's Combination Sum IV).\n\nPutting the coins in the outer loop fixes an order: while coin c is being processed, `dp` only holds ways built from earlier coins plus c, so each combination is built once, in one canonical order (all 1s, then all 2s): {1,1,1,1}, {1,1,2}, {2,2} = 3. `dp[0] = 1` is correct (one way to make 0: take nothing), going backwards would turn it into a use-each-coin-once problem, and the coin order doesn't change any count.\n\nTakeaway: coins outer → combinations, amount outer → permutations; both loop the amount forwards because coins are unlimited."
+    },
+    {
+      "q": "Cherry Pickup II: two robots start at (0, 0) and (0, C-1); at each step both move down one row, to column c-1, c or c+1. A cell's cherries are counted once even if both robots stand on it. Which DP state is correct and has no redundant dimension?",
+      "options": [
+        "`(r1, c1, r2, c2)`: the robots can be on different rows, so track both fully",
+        "`(row, c)` for each robot separately: find each best path and add the two totals",
+        "`(row, c1, c2)`: both robots are always on the same row, so one row index is enough",
+        "`(row, c1)`: c2 is always C-1-c1 by symmetry, so it never needs storing"
+      ],
+      "answer": 2,
+      "why": "Both robots move down exactly one row per step, so after t steps both are on row t: r1 = r2 always, and the 4-index state wastes a dimension. They interact only when they share a cell, so the state must hold both columns at once: `dp[row][c1][c2]` = best total from this row down, with 3 × 3 = 9 move pairs per state, O(R × C^2 × 9).\n\nSolving each robot separately double-counts shared cells: on `[[1, 0, 1], [0, 9, 0]]` each robot's best path ends on the 9, so the sum says 20, but the real answer is 1 + 1 + 9 = 11. Nothing forces the robots to mirror each other, so c2 can't be derived from c1.\n\nTakeaway: when several agents move in lockstep, put all their positions in one state and drop whatever the lockstep makes equal (here, the row)."
+    }
+  ]
+}

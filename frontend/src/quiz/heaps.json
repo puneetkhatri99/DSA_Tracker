@@ -1,0 +1,177 @@
+{
+  "easy": [
+    {
+      "q": "A heap is stored level by level in an array (0-indexed; the children of `i` are at `2i + 1` and `2i + 2`). Which array is **not** a valid min-heap?",
+      "options": [
+        "`[1, 4, 2, 3, 5, 6, 7]`",
+        "`[1, 5, 2, 6, 7, 3, 4]`",
+        "`[2, 3, 2, 3, 4, 2, 5]`",
+        "`[1, 3, 2, 7, 4, 5, 6]`"
+      ],
+      "answer": 0,
+      "why": "A min-heap only requires every parent ≤ its children. In `[1, 4, 2, 3, 5, 6, 7]`, index 1 holds 4 and its left child (index 3) holds 3, so the property fails there, even though the array looks almost sorted.\n\n`[1, 5, 2, 6, 7, 3, 4]` is valid: 5 is above 6 and 7, and it does not matter that 5 is bigger than 3 and 4 in the other subtree, because a heap only orders parents and children, not siblings or cousins. Duplicates are fine too, as in `[2, 3, 2, 3, 4, 2, 5]`.\n\nTakeaway: to check a heap, compare each `a[i]` with `a[2i+1]` and `a[2i+2]` for `i` up to `n/2 - 1`; a heap is not a sorted array."
+    },
+    {
+      "q": "What does this print?",
+      "code": "PriorityQueue<Integer> pq = new PriorityQueue<>(Collections.reverseOrder());\nfor (int x : new int[]{3, 1, 4, 1, 5}) pq.offer(x);\nStringBuilder sb = new StringBuilder();\nwhile (!pq.isEmpty()) sb.append(pq.poll()).append(' ');\nSystem.out.println(sb.toString().trim());",
+      "options": [
+        "`1 1 3 4 5`",
+        "`3 1 4 1 5`",
+        "`5 4 3 1 1`",
+        "`5 4 3 1`"
+      ],
+      "answer": 2,
+      "why": "`Collections.reverseOrder()` turns Java's `PriorityQueue` (a min-heap by default) into a max-heap, so each `poll()` removes the largest remaining element: 5, 4, 3, 1, 1.\n\n`1 1 3 4 5` is the default min-heap order you'd get without the comparator. A priority queue does not keep insertion order, so `3 1 4 1 5` is wrong, and unlike a `TreeSet` it keeps duplicates, so both 1s come out.\n\nTakeaway: `new PriorityQueue<>()` is a min-heap; pass `Collections.reverseOrder()` (or `(a, b) -> Integer.compare(b, a)`) for a max-heap, and poll repeatedly to get sorted order."
+    },
+    {
+      "q": "Which `PriorityQueue` operation takes O(n) time on a queue of n elements?",
+      "options": [
+        "`poll()` to remove the minimum",
+        "`offer(x)` to insert a new element",
+        "`peek()` to read the minimum",
+        "`remove(x)` for an arbitrary element x"
+      ],
+      "answer": 3,
+      "why": "The heap only knows where the minimum is (index 0). To remove an arbitrary value it must first find it with a linear scan, O(n), and then repair the heap in O(log n). `contains(x)` is O(n) for the same reason.\n\n`poll()` and `offer()` are O(log n) because they move one element along a single root-to-leaf path (sift down or sift up), and `peek()` is O(1).\n\nTakeaway: if you need to delete arbitrary elements often, use lazy deletion (skip stale entries when they reach the top) or a `TreeMap`/`TreeSet`."
+    },
+    {
+      "q": "Numbers arrive one at a time, and after each one you must report the k-th largest so far, keeping only k numbers in a heap. Which setup is correct?",
+      "options": [
+        "Max-heap; after each offer, poll if size > k; the answer is `peek()`",
+        "Min-heap; after each offer, poll if size > k; the answer is `peek()`",
+        "Min-heap; after each offer, poll if size > k; the answer is the value just polled",
+        "Max-heap; never poll; the answer is `peek()`"
+      ],
+      "answer": 1,
+      "why": "The heap should hold the k largest numbers so far. A **min**-heap keeps the smallest of them on top, so when a (k+1)-th number arrives you evict that smallest one in O(log k), and the top is exactly the k-th largest.\n\nWith a max-heap you'd evict the largest and keep the k smallest, so `peek()` would be the k-th **smallest**. The value just polled is the one that dropped out of the top k, not the k-th largest. A max-heap that never polls just reports the maximum and grows without bound.\n\nTakeaway: K largest → min-heap of size k; K smallest → max-heap of size k."
+    },
+    {
+      "q": "Insert 1 into the min-heap `[2, 5, 3, 9, 6, 8, 4]` (append at the end, then sift up). What is the array afterwards?",
+      "options": [
+        "`[1, 2, 3, 4, 5, 6, 8, 9]`",
+        "`[1, 2, 5, 3, 9, 6, 8, 4]`",
+        "`[1, 2, 3, 5, 6, 8, 4, 9]`",
+        "`[2, 5, 3, 1, 6, 8, 4, 9]`"
+      ],
+      "answer": 2,
+      "why": "1 is appended at index 7. Its parent is index (7 - 1) / 2 = 3, holding 9, so they swap. At index 3 the parent is index 1 holding 5, swap again; at index 1 the parent is index 0 holding 2, swap again, and 1 becomes the root. Only the path 9 → 5 → 2 moved, each one level down.\n\nA heap is not a sorted array, so `[1, 2, 3, 4, 5, ...]` is wrong. Putting 1 at index 0 and shifting everything right is an array insert (O(n)) and breaks parent/child pairs. Stopping after one swap leaves 1 below 5.\n\nTakeaway: sift-up touches only one leaf-to-root path, which is why insert is O(log n)."
+    }
+  ],
+  "medium": [
+    {
+      "q": "This max-heap prints `-1000000000` instead of `2000000000`. Why?",
+      "code": "PriorityQueue<Integer> pq = new PriorityQueue<>((a, b) -> b - a);\npq.offer(2_000_000_000);\npq.offer(-1_000_000_000);\nSystem.out.println(pq.peek());",
+      "options": [
+        "A comparator only breaks ties; `PriorityQueue` is always a min-heap",
+        "`b - a` overflows `int`, so the comparator returns the wrong sign",
+        "`peek()` returns the element that was inserted most recently",
+        "Large `Integer` objects are compared by reference, not by value"
+      ],
+      "answer": 1,
+      "why": "When -1,000,000,000 is inserted, sift-up compares it with the root 2,000,000,000 and the lambda computes `2e9 - (-1e9)`. The true result, 3,000,000,000, does not fit in an `int` (max about 2.147e9), so it wraps to -1,294,967,296. A negative result means \"the new element comes first\", so -1e9 moves above 2e9 and becomes the top.\n\nNothing is compared by reference: the lambda unboxes both values before subtracting (the `==` reference pitfall is a different bug). A comparator fully decides the order, and `peek()` always returns the root.\n\nTakeaway: never write a comparator as a subtraction; use `Integer.compare(b, a)` or `Collections.reverseOrder()`."
+    },
+    {
+      "q": "Joining two sticks of lengths x and y costs x + y and leaves one stick of length x + y. What is the minimum total cost to join `[1, 2, 3, 4, 5]` into one stick?",
+      "options": [
+        "34",
+        "50",
+        "15",
+        "33"
+      ],
+      "answer": 3,
+      "why": "Always join the two shortest sticks, using a min-heap: 1+2 = 3 (cost 3), 3+3 = 6 (cost 6), 4+5 = 9 (cost 9), 6+9 = 15 (cost 15), total 33.\n\n34 comes from sorting once and folding left to right (1+2, then +3, +4, +5). After the first join the new stick must compete with the remaining sticks again, which is why you need a heap, not a single sort. 50 joins the longest first, and 15 counts only the final join. Each length is paid once for every join it takes part in, so long sticks should take part in as few joins as possible.\n\nTakeaway: \"repeatedly combine the two smallest\" is greedy + min-heap, O(n log n)."
+    },
+    {
+      "q": "You merge k sorted lists of n nodes each by merging list 1 with list 2, then the result with list 3, and so on. What is the total time?",
+      "options": [
+        "O(n·k²)",
+        "O(n·k·log k)",
+        "O(n·k)",
+        "O(n·k·log n)"
+      ],
+      "answer": 0,
+      "why": "The i-th merge combines a result of length i·n with n new nodes, costing about (i + 1)·n. Summed over the k - 1 merges that is n·(2 + 3 + ... + k) ≈ n·k²/2, so O(n·k²): the early nodes are walked again in almost every merge.\n\nO(n·k·log k) is what the better approaches achieve: a min-heap holding one current head per list (each of the nk nodes is pushed and popped once at O(log k)), or merging the lists in pairs, round after round. O(n·k) would need each node to be touched a constant number of times.\n\nTakeaway: for a k-way merge, keep a heap of the k current heads so every step costs O(log k)."
+    },
+    {
+      "q": "Hand of Straights: split the cards into groups of `groupSize` consecutive values. The greedy takes the smallest remaining card x and removes x, x+1, ..., x+groupSize−1, failing if one is missing. Why is starting at the smallest card always safe?",
+      "options": [
+        "The smallest card is usually the most frequent one, so using it first frees the most cards",
+        "Any starting card works; the smallest is used only because a min-heap finds it cheaply",
+        "Nothing smaller remains, so x can only be the first card of its group, and that group is forced",
+        "The groups must be reported in increasing order, so the smallest group has to be built first"
+      ],
+      "answer": 2,
+      "why": "If x were not the first card of its group, the group would need a card smaller than x, and none is left. So x must start a group, and that group is fully determined: x, x+1, ..., x+groupSize−1. If one of them is missing, no valid split exists, so failing at once is correct.\n\nStarting elsewhere can fail on solvable input: for `[1, 2, 3, 4]` with groupSize 2, starting at 2 takes `{2, 3}` and strands 1 and 4. The answer is just true/false, so output order is irrelevant, and frequency has nothing to do with the argument.\n\nTakeaway: a greedy choice is safe when the first remaining item has only one possible role; use a `TreeMap` of counts or a min-heap to find the smallest card."
+    },
+    {
+      "q": "An array already inside the heap is changed so it should become the new minimum. What does this print?",
+      "code": "int[] a = {5}, b = {3};\nPriorityQueue<int[]> pq = new PriorityQueue<>((x, y) -> Integer.compare(x[0], y[0]));\npq.offer(a);\npq.offer(b);\na[0] = 1;              // a should now be the smallest\nSystem.out.println(pq.poll()[0]);",
+      "options": [
+        "1",
+        "3",
+        "5",
+        "It throws `ConcurrentModificationException`"
+      ],
+      "answer": 1,
+      "why": "When `b` was offered it compared smaller than `a` (3 < 5) and was sifted up to the root. Changing `a[0]` afterwards changes the object, but the heap is never told, so nothing moves: the root is still `b` and `poll()` returns 3, even though `a` now holds 1.\n\n`PriorityQueue` only reorders inside `offer`, `poll` and `remove`; it does not watch its elements. `ConcurrentModificationException` is about modifying a collection while iterating over it, which does not happen here. The fix is remove, change, offer again, or (common in Dijkstra) offer a new entry and skip stale ones when they are polled.\n\nTakeaway: never change the fields a comparator reads while the object is inside a heap."
+    }
+  ],
+  "hard": [
+    {
+      "q": "Bottom-up build-heap sifts down every node from index `n/2 − 1` down to 0. One sift-down can cost O(log n), yet the whole build is O(n). Why?",
+      "options": [
+        "Each sift-down is O(1) amortised, because later sift-downs reuse the swaps done by earlier ones",
+        "Most nodes sit near the leaves and can move only a few levels; summed over all levels the moves total O(n)",
+        "Only the root can sift down more than one level; every other node moves at most one level",
+        "Once the lower levels are heaps, the upper nodes are already in order, so their sift-downs stop at once"
+      ],
+      "answer": 1,
+      "why": "A node at height h (its distance to the leaves) can move down at most h levels. Half the nodes are leaves (height 0), a quarter have height 1, an eighth height 2, and only the root has height log n. The total is at most Σ h · n/2^(h+1) = n, so the build is O(n).\n\nThe \"one level\" claim is false: a node at height 3 can move 3 levels, it is just that very few nodes are that high. Compare inserting the n elements one by one: sift-**up** cost depends on depth, and most nodes are deep, so that is O(n log n).\n\nTakeaway: build-heap is linear because the expensive moves belong to the few nodes near the top."
+    },
+    {
+      "q": "This median finder balances the heap sizes but never moves elements between the halves. What does `findMedian()` return after adding 10, 1, 5?",
+      "code": "PriorityQueue<Integer> low = new PriorityQueue<>(Collections.reverseOrder()); // smaller half\nPriorityQueue<Integer> high = new PriorityQueue<>();                          // larger half\n\nvoid addNum(int x) {\n    if (low.size() <= high.size()) low.offer(x); else high.offer(x);\n}\n\ndouble findMedian() {\n    return low.size() > high.size() ? low.peek() : (low.peek() + (long) high.peek()) / 2.0;\n}",
+      "options": [
+        "5.0",
+        "1.0",
+        "5.5",
+        "10.0"
+      ],
+      "answer": 3,
+      "why": "10 goes to `low` (sizes were 0, 0), 1 goes to `high` (sizes 1, 0), and 5 goes to `low` (sizes 1, 1). Now `low = {10, 5}` and `high = {1}`, so `low.peek()` is 10, and the method returns 10.0 instead of the true median 5.\n\nBalancing sizes is only half the job; the other invariant is that every element of `low` is ≤ every element of `high`, and 10 > 1 breaks it. The standard fix routes each number through both heaps (`low.offer(x); high.offer(low.poll());`, then move one back if `high` is larger), which keeps both invariants in O(log n).\n\nTakeaway: the two-heap median needs an **order** invariant (max of low ≤ min of high) and a **size** invariant (sizes differ by at most 1)."
+    },
+    {
+      "q": "Top k sums `A[i] + B[j]` with A and B sorted in descending order: start a max-heap with (0, 0); each time you poll (i, j), push (i+1, j) and (i, j+1). Why does this also need a `visited` set of index pairs?",
+      "options": [
+        "Pair (i+1, j+1) is reachable from both (i+1, j) and (i, j+1), so it can be pushed and reported twice",
+        "Without it the heap grows to n² entries, but the k sums reported would still be correct",
+        "Equal sums from different pairs must be reported once, and the set filters them by value",
+        "Without it the search could come back to (0, 0) and the loop would never terminate"
+      ],
+      "answer": 0,
+      "why": "Every pair outside the first row and column has two \"parents\" in this scheme, so it is pushed once from each. The same pair can then be polled twice and its sum counted twice, pushing out a sum that belongs in the answer. For A = [10, 1, 0], B = [10, 9, 0], k = 7 the correct answer ends `10, 10, 10, 9`, but without the set it ends with four 10s, because (1, 1) is reported twice.\n\nThe set stores **index pairs**, not values: two different pairs with the same sum are different combinations, and both belong in the answer. Indices only grow, so (0, 0) can never be revisited.\n\nTakeaway: when a heap explores a grid of states with more than one path to a state, deduplicate states on push, exactly like BFS."
+    },
+    {
+      "q": "You need the k-th largest of n numbers using a heap, and k is close to n (say k = n − 3). What is the more efficient heap formulation?",
+      "options": [
+        "Use the usual min-heap of size k; when k is close to n it runs in O(n)",
+        "Use a max-heap of size k; after the scan its top is the k-th largest",
+        "Find the (n − k + 1)-th smallest with a max-heap of size n − k + 1; its top is the answer",
+        "Use a min-heap of size n − k + 1; after the scan its top is the k-th largest"
+      ],
+      "answer": 2,
+      "why": "The k-th largest is the (n − k + 1)-th smallest; with k = n − 3 that is the 4th smallest. A max-heap of size m = n − k + 1 keeps the m smallest values seen, and its top is the m-th smallest, so the scan costs O(n log(n − k)), here O(n log 4).\n\nThe usual min-heap of size k costs O(n log k), which is O(n log n) when k ≈ n, not O(n). A max-heap of size k keeps the k smallest, so its top is the k-th **smallest**. A min-heap of size n − k + 1 keeps the n − k + 1 largest, so its top is the (n − k + 1)-th largest.\n\nTakeaway: keep the heap on the smaller side, size min(k, n − k + 1), and choose a min- or max-heap to match."
+    },
+    {
+      "q": "Task scheduler: each time slot runs one task or idles, and two runs of the same task need at least n = 2 other slots between them. What is the minimum number of slots for `A A A B B B C C D D`?",
+      "options": [
+        "8",
+        "9",
+        "12",
+        "10"
+      ],
+      "answer": 3,
+      "why": "The formula `(maxCount − 1) · (n + 1) + countOfMax` builds frames around the most frequent tasks: (3 − 1) · 3 + 2 = 8 for A and B. But 10 tasks cannot fit in 8 slots: once the extra tasks fill every idle gap, the frames simply stretch. The answer is `max(tasks.length, formula) = 10`, e.g. `A B C A B D A B C D` with no idle.\n\n9 is `maxCount · (n + 1)`, which adds a full frame after the last A. 12 is what you get by running tasks in alphabetical order instead of always picking the one with the most remaining: the two D's end up at the end, too close together, and need idles.\n\nTakeaway: always take the max with the number of tasks; the max-heap simulation (run the task with the most remaining first) handles it automatically."
+    }
+  ]
+}

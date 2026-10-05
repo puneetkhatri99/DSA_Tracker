@@ -1,0 +1,179 @@
+{
+  "easy": [
+    {
+      "q": "To test whether `n` is prime by trial division, it is enough to try divisors `d` with `d * d <= n`. Why?",
+      "options": [
+        "If n = a × b with a ≤ b, then a × a ≤ n, so some factor is at most √n",
+        "No prime bigger than √n can ever divide n, so larger ones need no check",
+        "Divisors above √n leave the same remainders as the ones below √n",
+        "Every composite number is divisible by 2, 3 or 5, which are all below √n"
+      ],
+      "answer": 0,
+      "why": "Divisors come in pairs `(d, n / d)`, and at most one member of a pair can exceed √n. So if `n` has any divisor besides 1 and itself, it has one ≤ √n: for 91 = 7 × 13, √91 ≈ 9.5 and 7 is found.\n\nA prime **can** be bigger than √n and still divide `n` (14 = 2 × 7, with 7 > √14 ≈ 3.7), but then its partner 2 is small and is found first. Checking only 2, 3 and 5 is not enough: 49 = 7 × 7.\n\nTakeaway: trial division is O(√n); write the bound as `(long) d * d <= n` or `d <= n / d` so `d * d` cannot overflow."
+    },
+    {
+      "q": "In the Sieve of Eratosthenes, when the outer loop reaches a prime `p`, crossing out starts at `p * p` instead of `2 * p`. Why is that safe?",
+      "options": [
+        "All numbers below p × p are prime, so there is nothing to cross out there",
+        "Multiples of p below p × p are always even, so the pass for 2 already removed them",
+        "Each k × p with k < p has a prime factor below p, so it was crossed out already",
+        "Multiples below p × p are crossed out later, when the outer loop reaches them"
+      ],
+      "answer": 2,
+      "why": "Take `p = 5`: its multiples below 25 are 10, 15 and 20, and each has a smaller prime factor (2, 3, 2) whose pass already crossed it out. In general `k × p` with `k < p` has a prime factor ≤ k < p, so that pass came first; 25 is the first multiple of 5 that only the pass for 5 can remove.\n\n15 is odd, so it is the pass for 3, not the pass for 2, that removes it. Numbers below 25 are not all prime (15 is not), and the outer loop never goes back to smaller numbers.\n\nTakeaway: the same fact is why the outer loop can stop once `p * p > n`: such a `p` has nothing new to cross out."
+    },
+    {
+      "q": "What are the tight time and extra-space bounds of the Sieve of Eratosthenes for all numbers up to `n`?",
+      "options": [
+        "O(n √n) time, O(1) space",
+        "O(n log log n) time, O(n) space",
+        "O(n log n) time, O(n) space",
+        "O(n) time, O(√n) space"
+      ],
+      "answer": 1,
+      "why": "Each prime `p` crosses out about `n / p` numbers, and the sum of `1 / p` over primes up to `n` grows like `log log n`, so the total is O(n log log n), which is almost linear. The `boolean[n + 1]` array is the O(n) space.\n\nO(n √n) is the cost of trial-dividing every number up to `n` separately. O(n log n) is what you would pay for crossing out multiples of **every** `i`, prime or not (a harmonic sum); skipping composite `i` is what brings it down.\n\nTakeaway: a sieve up to about 10^7 is fast and fits in memory easily (a Java `boolean` takes about 1 byte)."
+    },
+    {
+      "q": "What does this trial-division factorisation return for `n = 90`?",
+      "code": "List<Integer> f = new ArrayList<>();\nfor (int p = 2; (long) p * p <= n; p++)\n    while (n % p == 0) {\n        f.add(p);\n        n /= p;\n    }\nif (n > 1) f.add(n);\nreturn f;",
+      "options": [
+        "[2, 3, 5]",
+        "[2, 3, 3]",
+        "[2, 3, 15]",
+        "[2, 3, 3, 5]"
+      ],
+      "answer": 3,
+      "why": "p = 2 divides once (90 → 45), p = 3 divides twice (45 → 15 → 5), and at p = 4 the condition `16 <= 5` fails because `n` has shrunk to 5. The leftover 5 is greater than 1, so the last line adds it: `[2, 3, 3, 5]`, and 2 · 3 · 3 · 5 = 90.\n\nThe `while` keeps dividing by the same `p`, so repeated factors appear with their multiplicity; with `if` instead of `while` you would get `[2, 3, 15]`. Dropping the `if (n > 1)` line loses the 5 and gives `[2, 3, 3]`, and `[2, 3, 5]` lists distinct primes only, which is a different question.\n\nTakeaway: divide each factor out completely, and remember the leftover, which is a prime bigger than the square root of what remained."
+    },
+    {
+      "q": "You must check whether one number `n` up to 10^12 is prime. Which approach fits?",
+      "options": [
+        "Trial division while d × d ≤ n: at most about 10^6 divisions",
+        "A Sieve of Eratosthenes up to n, then look up n",
+        "A smallest-prime-factor sieve up to n, then check spf[n] == n",
+        "Try every divisor from 2 up to n − 1 and stop at the first hit"
+      ],
+      "answer": 0,
+      "why": "√(10^12) = 10^6, so trial division needs at most about a million divisions, well under a second. Use `long` for `n` and for `d * d`.\n\nBoth sieves need an array of size `n + 1`: 10^12 entries is about a terabyte, which is impossible. A sieve pays O(n) up front so that many later queries are cheap, and for a single query that trade is terrible. Trying every divisor up to n − 1 is 10^12 steps.\n\nTakeaway: one big number → trial division up to √n; many numbers up to about 10^7 → sieve once and look them up."
+    }
+  ],
+  "medium": [
+    {
+      "q": "You get up to 10^5 queries, each asking how many primes lie in `[L, R]`, with `1 ≤ L ≤ R ≤ 10^6`. Let `cnt[i]` be the number of primes ≤ `i`. Which plan is correct and fast?",
+      "options": [
+        "Sieve once up to 10^6, build cnt, and answer each query as cnt[R] − cnt[L]",
+        "Run a fresh sieve over the numbers from L to R for every query",
+        "Sieve once up to 10^6, build cnt, and answer each query as cnt[R] − cnt[L − 1]",
+        "Trial-divide every number in [L, R] for every query"
+      ],
+      "answer": 2,
+      "why": "`cnt[R] - cnt[L - 1]` counts primes ≤ R that are not ≤ L − 1, which is exactly `[L, R]`. Check `L = 2, R = 3`: `cnt[3] - cnt[1] = 2 - 0 = 2` (the primes 2 and 3), while `cnt[3] - cnt[2] = 1` drops `L` itself whenever `L` is prime. Since `L ≥ 1`, the index `L - 1` is never negative.\n\nThe total cost is O(N log log N) once plus O(1) per query. Re-sieving or trial-dividing per query costs up to about 10^6 work each time, and 10^5 queries push that to around 10^11.\n\nTakeaway: many range queries over fixed data → precompute once, then use prefix sums."
+    },
+    {
+      "q": "After building a smallest-prime-factor array `spf` up to 10^6, each `x` is factorised by repeatedly recording `spf[x]` and doing `x /= spf[x]` until `x == 1`. Why does one factorisation take O(log x) steps?",
+      "options": [
+        "spf is sorted, so each lookup is a binary search over about log x entries",
+        "Each step divides x by at least 2, so x reaches 1 within about log₂ x steps",
+        "Only primes up to log x can divide x, so only those are tried",
+        "The loop stops once spf[x] × spf[x] > x, like trial division"
+      ],
+      "answer": 1,
+      "why": "Every iteration replaces `x` with `x / spf[x]`, and `spf[x] ≥ 2`, so `x` at least halves each time. Reaching 1 by halving takes at most log₂ x steps: 360 → 180 → 90 → 45 → 15 → 5 → 1 is 6 steps, giving 2, 2, 2, 3, 3, 5.\n\nEach lookup is a plain O(1) array access (no search), and the loop runs until `x == 1`, not until a √x bound. Large primes can divide `x` too: `spf[97] = 97`.\n\nTakeaway: the SPF sieve costs O(n log log n) once and then factorises any number up to `n` in O(log x), far faster than O(√x) trial division when there are many numbers."
+    },
+    {
+      "q": "Running this sieve for `n = 30`, how many times is `isPrime[30] = false` executed?",
+      "code": "for (int i = 2; i * i <= n; i++)\n    if (isPrime[i])\n        for (int j = i * i; j <= n; j += i)\n            isPrime[j] = false;",
+      "options": [
+        "1",
+        "2",
+        "6",
+        "3"
+      ],
+      "answer": 3,
+      "why": "The outer loop runs for `i = 2, 3, 4, 5` (36 > 30 stops it), and `i = 4` is skipped because it was already crossed out. The pass for 2 (4, 6, ..., 30), the pass for 3 (9, 12, ..., 30) and the pass for 5 (25, 30) all hit 30, so it is crossed out 3 times, once per prime factor.\n\n\"Once\" would be true for a linear sieve, which crosses each composite only by its smallest prime factor, but not for this one. 6 is the number of divisors of 30 between 2 and 15, but only prime `i` with `i * i <= 30` ever run.\n\nTakeaway: this repeated crossing is why the sieve is O(n log log n) rather than O(n); a composite gets one write per small prime factor."
+    },
+    {
+      "q": "This prints all divisors of `n` in O(√n). How many `println` calls does it make for `n = 36`?",
+      "code": "for (int i = 1; i * i <= n; i++) {\n    if (n % i == 0) {\n        System.out.println(i);\n        System.out.println(n / i);\n    }\n}",
+      "options": [
+        "10",
+        "9",
+        "5",
+        "8"
+      ],
+      "answer": 0,
+      "why": "The loop finds i = 1, 2, 3, 4, 6 and prints the pairs (1, 36), (2, 18), (3, 12), (4, 9), (6, 6): 10 numbers. 36 has only 9 divisors; for the square root 6 the pair is (6, 6), so 6 is printed twice.\n\nFix it by printing the partner only when it is different:\n```java\nif (i != n / i) System.out.println(n / i);\n```\n5 is the number of loop hits, not of prints, and `i * i <= n` does include `i = 6`, so 8 is not right either.\n\nTakeaway: when you list divisor pairs up to √n, handle the perfect-square case (perfect squares have an odd number of divisors)."
+    },
+    {
+      "q": "This sieve's outer loop uses a **strict** `<`. For `n = 25`, which composite number is wrongly left marked as prime?",
+      "code": "boolean[] isPrime = new boolean[n + 1];\nArrays.fill(isPrime, 2, n + 1, true);\nfor (int i = 2; i * i < n; i++)          // strict <\n    if (isPrime[i])\n        for (int j = i * i; j <= n; j += i)\n            isPrime[j] = false;",
+      "options": [
+        "9",
+        "15",
+        "25",
+        "No number, the result is still correct"
+      ],
+      "answer": 2,
+      "why": "With `i * i < 25` the outer loop runs for `i = 2, 3, 4` and stops before 5, because `25 < 25` is false. The prime 5 never gets its pass, and the only multiple it still had to cross out was 25 itself (10, 15 and 20 were handled by 2 and 3), so 25 survives as a \"prime\".\n\n9 is fine: `3 * 3 = 9 < 25`, so the pass for 3 runs and starts at 9, and 15 is crossed out by 3. The bug strikes exactly when `n` is the square of a prime (25, 49, 121, ...), which is why it slips past many tests.\n\nTakeaway: the bound is `i * i <= n` (safer: `(long) i * i <= n`); test boundary values like `n = p²`."
+    }
+  ],
+  "hard": [
+    {
+      "q": "This sieve lets the outer loop run all the way to `n` and starts each inner loop at `i * i`, all in `int`. What happens for `n = 100000`?",
+      "code": "boolean[] composite = new boolean[n + 1];\nfor (int i = 2; i <= n; i++)\n    if (!composite[i])\n        for (int j = i * i; j <= n; j += i)\n            composite[j] = true;",
+      "options": [
+        "It works correctly, just a little slower",
+        "It throws ArrayIndexOutOfBoundsException",
+        "It never terminates",
+        "It finishes but marks some primes as composite"
+      ],
+      "answer": 1,
+      "why": "For primes `i` with `i * i > n` the inner loop simply does not run, so for a while nothing bad happens. But at the first prime above 46340, `i = 46349`, the true square 2,148,229,801 is larger than `Integer.MAX_VALUE` and wraps to -2,146,737,495. That negative `j` passes `j <= n`, and `composite[j]` throws.\n\nThe fix is to bound the outer loop by the square root, `(long) i * i <= n` (or `i <= n / i`): larger primes have nothing left to cross out, and `i * i` is never computed for big `i`. For `n` below 46349 the buggy version happens to work, which is why it can pass small tests.\n\nTakeaway: any `i * i` where `i` can grow up to `n` is an overflow candidate; bound the loop so the square stays in range."
+    },
+    {
+      "q": "Segmented sieve for `[L, R]` with `R` up to 10^12 and `R − L ≤ 10^6`: for each base prime `p ≤ √R`, crossing out starts at `max(p * p, ceil(L / p) * p)`. What goes wrong if it starts at just `ceil(L / p) * p`?",
+      "options": [
+        "Composites between L and p × p are never crossed out",
+        "The start can fall below L, giving a negative index into the segment",
+        "Nothing: the max only skips redundant work, so the output is the same",
+        "When L ≤ p ≤ R, the start is p itself, so the prime p gets crossed out"
+      ],
+      "answer": 3,
+      "why": "`ceil(L / p) * p` is the first multiple of `p` that is ≥ L. If `L ≤ p`, that multiple is `p × 1 = p`, which is prime. For `L = 2, R = 30` with base primes 2, 3 and 5, the plain start removes 2, 3 and 5 and reports only `[7, 11, ..., 29]`; with the `max`, they are kept.\n\nEvery other multiple `k × p` with `k ≥ 2` is composite, so crossing it out is harmless: the `max` protects `p` itself rather than saving work, and since it never moves the start earlier, no composite is missed. The start is ≥ L by construction, so the index `start - L` is never negative.\n\nTakeaway: the plain sieve could even start at `2p`, but a segment may contain the base primes themselves, so exclude `p` (and remember that 1 is not prime when `L = 1`)."
+    },
+    {
+      "q": "Why is the Sieve of Eratosthenes O(n log log n) and not O(n)?",
+      "options": [
+        "A composite is crossed once per small prime factor; n / p summed over primes is n log log n",
+        "Each number is crossed out exactly once, but reading isPrime[i] costs O(log log n)",
+        "It adds up n / i for every i from 2 to √n, a harmonic series that grows like n log log n",
+        "Each composite is crossed out exactly once, and there are about n log log n composites up to n"
+      ],
+      "answer": 0,
+      "why": "The pass for prime `p` touches about `n / p` cells, so the total is `n × (1/2 + 1/3 + 1/5 + 1/7 + ...)`. The sum of the reciprocals of the primes grows like `log log n` (very slowly), giving O(n log log n); for n = 10^6 the sieve does about 2.1 million crossings.\n\nThe extra factor comes from repeated work: 30 is crossed out by 2, 3 and 5. There cannot be n log log n composites, since there are fewer than `n` numbers in total, and array reads are O(1). Summing `n / i` over **every** `i` (a harmonic series) would give O(n log n); the `if (isPrime[i])` check is what restricts the sum to primes.\n\nTakeaway: the cost is the sum over primes of `n / p`. A linear sieve that crosses each composite only via its smallest prime factor reaches O(n), but the classic sieve is almost always fast enough."
+    },
+    {
+      "q": "In trial-division factorisation the loop condition uses the **current** `n`, which shrinks as factors are divided out. When the loop exits with `n > 1`, why must that leftover `n` be prime?",
+      "code": "List<Integer> f = new ArrayList<>();\nfor (int p = 2; (long) p * p <= n; p++)\n    while (n % p == 0) {\n        f.add(p);\n        n /= p;\n    }\nif (n > 1) f.add(n);\nreturn f;",
+      "options": [
+        "Only primes are ever tried as p, so whatever is left over must be prime too",
+        "n is at least halved on every iteration, so the leftover is too small to have two prime factors",
+        "No prime below p is left in n, and p × p > n, so n cannot split into two factors ≥ p",
+        "It is prime only when the original n was odd; for an even n the loop always ends with 1"
+      ],
+      "answer": 2,
+      "why": "Invariant: when the loop tests `p`, every prime smaller than `p` has already been divided out completely, so the current `n` has no factor in `2..p-1`. If the leftover were composite, it would be `a × b` with `p ≤ a ≤ b`, so `n ≥ p × p`, contradicting the exit condition `p × p > n`. For 582 = 2 × 3 × 97: after dividing out 2 and 3, `n = 97`, the loop exits at `p = 10` (100 > 97), and 97 is prime.\n\nThe loop does try composite `p` such as 4 and 6; they just never divide, because their prime factors are already gone. And `n` is not halved on every iteration, since most `p` do not divide it at all; 582 is even and still leaves 97.\n\nTakeaway: comparing against the shrinking `n` is both correct and faster, because the loop stops as soon as what remains is 1 or a single prime."
+    },
+    {
+      "q": "For `n = 10^7`, compare a plain `boolean[]` sieve with a smallest-prime-factor `int[] spf` sieve. Which statement is accurate?",
+      "options": [
+        "spf takes O(n log n) time to build instead of O(n log log n), but uses the same memory",
+        "spf costs about 4× the memory (int vs boolean) but factorises any x ≤ n in O(log x)",
+        "Both can factorise any x ≤ n in O(log x), so the extra memory of spf buys nothing",
+        "spf cannot answer whether x is prime, so a boolean sieve must be kept alongside it"
+      ],
+      "answer": 1,
+      "why": "A Java `boolean[]` uses about 1 byte per entry (~10 MB here) and an `int[]` 4 bytes (~40 MB). In return, `spf` gives the smallest prime factor of every `x`, so factorising is just repeated division: O(log x) per number.\n\nBuilding `spf` is still O(n log log n): each prime `p` walks its `n / p` multiples, exactly like the plain sieve. A plain sieve only says prime or not prime, so factorising with it still needs O(√x) trial division. And `spf` already answers primality: for `x ≥ 2`, `x` is prime exactly when `spf[x] == x`.\n\nTakeaway: use the plain sieve to list or count primes; switch to `spf` when you need to factorise many numbers (for example, the prime factors of every element of an array)."
+    }
+  ]
+}

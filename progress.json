@@ -1,0 +1,35 @@
+{
+ "reverse-a-number": {
+  "done": "2026-09-30",
+  "due": "2026-10-01"
+ },
+ "$meta": {},
+ "count-all-digits-of-a-number": {
+  "done": "2026-09-30",
+  "how": "alone",
+  "mins": 7,
+  "lvl": 1,
+  "due": "2026-10-03"
+ },
+ "count-number-of-odd-digits-in-a-number": {
+  "done": "2026-09-30",
+  "how": "hint",
+  "due": "2026-10-01",
+  "note": "first i wrote 3 rules to find out that are number even-even , odd-even or odd-odd\n\nlater the better approach was \nThe shortcut: instead of counting inside the range, do two easy counts from the start of the street and subtract.\n\nCount all the odd houses from house 1 up to high.\nCount all the odd houses from house 1 up to just before low.\nSubtract the second from the first. What's left is the odd houses in your range.",
+  "code": "class Solution {\n    public int countOdds(int low, int high) {\n        return ((high + 1)/2 - low/2);\n    }\n}"
+ },
+ "palindrome-number": {
+  "rev": true,
+  "done": "2026-09-30",
+  "how": "alone",
+  "lvl": 1,
+  "due": "2026-10-03"
+ },
+ "sum-of-first-n-numbers": {
+  "done": "2026-09-30",
+  "how": "alone",
+  "mins": 10,
+  "lvl": 1,
+  "due": "2026-10-03"
+ }
+}

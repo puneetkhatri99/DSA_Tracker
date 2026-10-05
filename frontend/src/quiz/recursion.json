@@ -1,0 +1,183 @@
+{
+  "easy": [
+    {
+      "q": "This subsets generator stores `cur` directly instead of a copy. What does `res` print after `subs(0, new int[]{1, 2}, new ArrayList<>(), res)`?",
+      "code": "void subs(int i, int[] a, List<Integer> cur, List<List<Integer>> res) {\n    if (i == a.length) { res.add(cur); return; }   // no copy\n    cur.add(a[i]);\n    subs(i + 1, a, cur, res);\n    cur.remove(cur.size() - 1);\n    subs(i + 1, a, cur, res);\n}",
+      "options": [
+        "[[1, 2], [1], [2], []]",
+        "[[1, 2], [1, 2], [1, 2], [1, 2]]",
+        "[[], [], [], []]",
+        "[[1, 2]]"
+      ],
+      "answer": 2,
+      "why": "`res.add(cur)` stores a **reference** to the one shared list, not a snapshot of it. All four entries point to the same `ArrayList`, and every `add` is undone by a matching `remove`, so when the recursion finishes that list is empty and `res` prints `[[], [], [], []]`.\n\n`[[1, 2], [1], [2], []]` is what `res.add(new ArrayList<>(cur))` gives. `[[1, 2], [1, 2], ...]` is tempting, but the list is printed at the end, not at the moment it was added.\n\n**Takeaway:** when the path is a mutable object you keep changing, record a copy at the leaf."
+    },
+    {
+      "q": "You generate every subset of n distinct integers and store each one as a new `List<Integer>`. What is the tight time complexity?",
+      "options": [
+        "O(2ⁿ)",
+        "O(2ⁿ · n)",
+        "O(n · n!)",
+        "O(n² · 2ⁿ)"
+      ],
+      "answer": 1,
+      "why": "Each element is either in or out, so there are 2ⁿ subsets: the recursion tree has 2ⁿ leaves and about 2ⁿ⁺¹ nodes. At every leaf you copy the current list, which costs up to n, so the total is O(2ⁿ · n).\n\nO(2ⁿ) is the right answer only when you *count* or *check* subsets without copying them, as in \"count subsequences with sum k\". The depth n does not multiply in again for O(n² · 2ⁿ): the walk down each path is already counted in the 2ⁿ⁺¹ nodes. O(n · n!) is the cost of permutations; subsets ignore order.\n\n**Takeaway:** time ≈ (nodes in the recursion tree) × (work per node), and copying the output is part of the work."
+    },
+    {
+      "q": "In the pick / not-pick undo step, someone writes `cur.remove(a[i])` instead of `cur.remove(cur.size() - 1)`, where `cur` is a `List<Integer>` and `a` is an `int[]`. What happens for `a = {3, 7}`?",
+      "options": [
+        "Removes the value 7, so all subsets are still correct",
+        "Removes the first element, so some subsets come out wrong",
+        "Does not compile: the call is ambiguous between index and value",
+        "Throws `IndexOutOfBoundsException`: `remove(int)` treats 7 as an index"
+      ],
+      "answer": 3,
+      "why": "`List<Integer>` has two overloads: `remove(int index)` and `remove(Object o)`. An `int` argument matches `remove(int index)` exactly, and Java prefers an exact primitive match over boxing, so the code compiles and the bug only shows up at runtime.\n\nTrace: pick 3, pick 7, so `cur = [3, 7]`; the undo then calls `cur.remove(7)`, asking for index 7 of a 2-element list, and throws `IndexOutOfBoundsException`. It never removes \"the value 7\".\n\n**Takeaway:** undo with `cur.remove(cur.size() - 1)`; if you ever really mean a value, write `cur.remove(Integer.valueOf(x))`."
+    },
+    {
+      "q": "Letter Combinations of a Phone Number uses the template below. What does it return for `digits = \"\"` (the empty string)?",
+      "code": "void letters(int idx, String digits, StringBuilder sb, List<String> res) {\n    if (idx == digits.length()) { res.add(sb.toString()); return; }\n    for (char ch : KEYS[digits.charAt(idx) - '0'].toCharArray()) {\n        sb.append(ch);\n        letters(idx + 1, digits, sb, res);\n        sb.deleteCharAt(sb.length() - 1);\n    }\n}",
+      "options": [
+        "`[\"\"]`: a list holding one empty string",
+        "`[]`: an empty list",
+        "It throws at `digits.charAt(0)`",
+        "`null`, since no letter is ever appended"
+      ],
+      "answer": 0,
+      "why": "With `idx = 0` and `digits.length() = 0`, the base case fires at once, before `charAt` is reached, and adds `sb.toString()`, which is the empty string. So the result is a list of size 1 holding `\"\"`.\n\nPrinted, `[\"\"]` looks like `[]`, which is why this is easy to miss, but `res.size()` is 1. Problems usually expect an empty list for empty input, so add `if (digits.isEmpty()) return res;` before starting the recursion.\n\n**Takeaway:** a \"path is complete\" base case also fires for an empty input; always check what your recursion returns for n = 0."
+    },
+    {
+      "q": "Generate Parentheses builds strings of n pairs one character at a time, tracking how many `(` (`open`) and `)` (`close`) are used so far. You append `(` while `open < n`. When is it safe to append `)`?",
+      "options": [
+        "When `close < n`",
+        "When `open == n`",
+        "When `close < open`",
+        "When `close <= open`"
+      ],
+      "answer": 2,
+      "why": "A prefix can still be completed into a balanced string only if it never has more `)` than `(`. Appending `)` keeps that true exactly when there is an unmatched `(` to close, i.e. `close < open`.\n\nWith `close < n`, n = 2 also produces `())(` and `)(()`, which are not balanced. `close <= open` allows a `)` when everything is already matched, such as `)` as the very first character. `open == n` only ever builds `((...))`.\n\nWith both rules, every leaf is valid, so no final validity check is needed.\n\n**Takeaway:** prune with the invariant that keeps every partial result extendable."
+    }
+  ],
+  "medium": [
+    {
+      "q": "In what order does this pick-first subsets code produce the subsets of `a = {1, 2, 3}`?",
+      "code": "void subs(int i, int[] a, List<Integer> cur, List<List<Integer>> res) {\n    if (i == a.length) { res.add(new ArrayList<>(cur)); return; }\n    cur.add(a[i]);                 // pick\n    subs(i + 1, a, cur, res);\n    cur.remove(cur.size() - 1);\n    subs(i + 1, a, cur, res);      // skip\n}",
+      "options": [
+        "[], [1], [1,2], [1,2,3], [1,3], [2], [2,3], [3]",
+        "[1,2,3], [1,2], [1,3], [1], [2,3], [2], [3], []",
+        "[], [3], [2], [2,3], [1], [1,3], [1,2], [1,2,3]",
+        "[1], [2], [3], [1,2], [1,3], [2,3], [1,2,3], []"
+      ],
+      "answer": 1,
+      "why": "Subsets are recorded only at the leaves, in depth-first order, and the pick branch runs first. So the first leaf is pick-pick-pick = `[1,2,3]`, then pick-pick-skip = `[1,2]`, then pick-skip-pick = `[1,3]`, and so on; the last leaf is skip-skip-skip = `[]`.\n\nThe first option is the order of the loop-style template, which records a subset at *every* node before extending it. The third option is what you get if you skip before you pick.\n\n**Takeaway:** the order of the recursive calls decides the output order; read the recursion tree left to right."
+    },
+    {
+      "q": "This Pow(x, n) for n ≥ 0 makes two recursive calls instead of storing the half result. What is its tight time complexity?",
+      "code": "double pow(double x, int n) {\n    if (n == 0) return 1;\n    if (n % 2 == 0) return pow(x, n / 2) * pow(x, n / 2);\n    return x * pow(x, n / 2) * pow(x, n / 2);\n}",
+      "options": [
+        "O(log n)",
+        "O(n log n)",
+        "O(log² n)",
+        "O(n)"
+      ],
+      "answer": 3,
+      "why": "The recurrence is T(n) = 2·T(n/2) + O(1). There are about log n levels and the number of calls doubles at each level, so the tree has O(n) nodes. Measured: n = 1024 makes 4095 calls, versus 12 when the half is computed once.\n\nO(log n) is what you get from `double half = pow(x, n / 2); return half * half;`, because then each level makes a single call.\n\n**Takeaway:** in divide and conquer, solving the same subproblem twice can wipe out the whole speed-up; compute it once and reuse it."
+    },
+    {
+      "q": "Combination Sum (unlimited reuse, `c` sorted) normally recurses with `combSum(i, ...)`. What does it return for `c = {2, 3, 6, 7}`, `target = 7` if that call is changed to `combSum(0, ...)`?",
+      "code": "void combSum(int start, int[] c, int target, List<Integer> cur, List<List<Integer>> res) {\n    if (target == 0) { res.add(new ArrayList<>(cur)); return; }\n    for (int i = start; i < c.length; i++) {\n        if (c[i] > target) break;\n        cur.add(c[i]);\n        combSum(0, c, target - c[i], cur, res);   // was: combSum(i, ...)\n        cur.remove(cur.size() - 1);\n    }\n}",
+      "options": [
+        "[[2,2,3],[7]], the same as before",
+        "[[7]] only, since reuse is now blocked",
+        "[[2,2,3],[2,3,2],[3,2,2],[7]]",
+        "Nothing: restarting at 0 recurses forever"
+      ],
+      "answer": 2,
+      "why": "Starting the loop at `i` means each combination is built in non-decreasing order, so every multiset appears exactly once. Restarting at 0 lets a smaller candidate come after a larger one, so the same multiset is produced once per distinct ordering: `[2,2,3]`, `[2,3,2]`, `[3,2,2]`, plus `[7]`.\n\nIt still terminates, because every call lowers `target` by at least 2. `[[7]]` is what recursing with `i + 1` (no reuse) would give.\n\n**Takeaway:** the `start` index turns permutations into combinations: pass `i` for reuse, `i + 1` for no reuse, never 0."
+    },
+    {
+      "q": "Subsets II on the sorted input `{1, 2, 2}` uses the duplicate check `i > 0` instead of `i > start`. What does it return?",
+      "code": "void subsetsWithDup(int start, int[] a, List<Integer> cur, List<List<Integer>> res) {\n    res.add(new ArrayList<>(cur));\n    for (int i = start; i < a.length; i++) {\n        if (i > 0 && a[i] == a[i - 1]) continue;   // should be i > start\n        cur.add(a[i]);\n        subsetsWithDup(i + 1, a, cur, res);\n        cur.remove(cur.size() - 1);\n    }\n}",
+      "options": [
+        "[[], [1], [1,2], [2]]",
+        "[[], [1], [1,2], [1,2,2], [2], [2,2]]",
+        "[[], [1], [1,2], [1,2], [2], [2]]",
+        "[[], [1], [1,2], [1,2,2], [2]]"
+      ],
+      "answer": 0,
+      "why": "The check is meant to skip a repeated value when it would be the *same choice at the same level*. With `i > 0` it also fires one level deeper: after picking the first 2 (index 1), the call with `start = 2` sees `a[2] == a[1]` and skips it, so a second 2 can never be added. That loses `[1,2,2]` and `[2,2]`, leaving `[[], [1], [1,2], [2]]`.\n\nWith `i > start`, index 2 is skipped only when it would be a *sibling* of index 1, which is exactly the duplicate subtree.\n\n**Takeaway:** dedupe across siblings (`i > start`), never along a path."
+    },
+    {
+      "q": "Count Good Numbers: a digit string of length n is good if digits at even indices (0-indexed) are even and digits at odd indices are prime (2, 3, 5, 7). n can be up to 10¹⁵; return the count mod 10⁹+7. Which approach fits?",
+      "options": [
+        "Pick / not-pick recursion over the n positions, counting leaves",
+        "Fast modular power: 5^⌈n/2⌉ · 4^⌊n/2⌋ mod M in O(log n)",
+        "A loop multiplying by 5 or 4 per position, O(n) with `long`",
+        "DP over positions and the previous digit, O(10 · n)"
+      ],
+      "answer": 1,
+      "why": "Positions are independent: the ⌈n/2⌉ even indices have 5 choices (0, 2, 4, 6, 8) and the ⌊n/2⌋ odd indices have 4 (2, 3, 5, 7), so the count is 5^⌈n/2⌉ · 4^⌊n/2⌋. For n = 3 that is 5 · 4 · 5 = 100, which matches brute force.\n\nThe O(n) loop is correct but 10¹⁵ multiplications is far too slow. Binary exponentiation (square the base, halve the exponent: the Pow(x, n) idea) needs about 50 steps; take `% M` after every multiply in `long` so products never overflow.\n\n**Takeaway:** independent choices multiply; a huge exponent calls for fast power."
+    }
+  ],
+  "hard": [
+    {
+      "q": "Counting subsequences with sum k, someone returns as soon as the remaining sum hits 0. For `a = {1, 2, 0}` and `k = 3` (correct answer: 2), what does it return?",
+      "code": "int count(int i, int[] a, int remaining) {\n    if (remaining == 0) return 1;          // early exit\n    if (i == a.length) return 0;\n    return count(i + 1, a, remaining - a[i]) + count(i + 1, a, remaining);\n}",
+      "options": [
+        "2: the early exit only saves time",
+        "3: it counts `[1,2]` twice",
+        "1: it never branches on the trailing 0",
+        "0: index 2 is never reached"
+      ],
+      "answer": 2,
+      "why": "The valid subsequences are `[1,2]` and `[1,2,0]`. After picking 1 and 2, `remaining` is 0 at `i = 2`, and the early exit returns 1 without branching on the 0, so \"pick 0\" and \"skip 0\" collapse into one. No other path reaches sum 3, so the function returns 1.\n\nWith only positive numbers the early exit happens to be safe: once the sum is reached, the only way to stay at k is to skip everything left, which is exactly one way. Zeros (and negatives) break that, so count only at `i == a.length`.\n\n**Takeaway:** an early return is a pruning decision; check it against zeros, negatives and duplicates."
+    },
+    {
+      "q": "Permutations II (input sorted, may contain duplicates) uses this skip rule, which drops the `!used[i - 1]` part. What does it return for `a = {1, 1, 2}`?",
+      "code": "void permute(int[] a, boolean[] used, List<Integer> cur, List<List<Integer>> res) {\n    if (cur.size() == a.length) { res.add(new ArrayList<>(cur)); return; }\n    for (int i = 0; i < a.length; i++) {\n        if (used[i]) continue;\n        if (i > 0 && a[i] == a[i - 1]) continue;   // missing && !used[i - 1]\n        used[i] = true; cur.add(a[i]);\n        permute(a, used, cur, res);\n        cur.remove(cur.size() - 1); used[i] = false;\n    }\n}",
+      "options": [
+        "[[1,1,2],[1,2,1],[2,1,1]]",
+        "[[1,1,2],[1,2,1],[1,1,2],[1,2,1],[2,1,1],[2,1,1]]",
+        "[[1,2],[2,1]]",
+        "[] (an empty list)"
+      ],
+      "answer": 3,
+      "why": "Without `!used[i - 1]`, index 1 is skipped at *every* level because `a[1] == a[0]`, even when index 0 is already in the permutation. So the second 1 can never be placed, `cur` never reaches size 3, and nothing is added: the result is empty.\n\n`[[1,2],[2,1]]` is tempting, but the base case needs `cur.size() == a.length`, so partial lists are never recorded. The full rule says: use a copy only if the previous equal copy is already used. That forces equal values to appear in index order, giving each distinct permutation once.\n\n**Takeaway:** a duplicate-skip rule must still leave exactly *one* way to use every copy."
+    },
+    {
+      "q": "This Pow(x, n) handles a negative exponent by recursing on `-n`. What happens when `n = Integer.MIN_VALUE` (−2³¹)?",
+      "code": "double myPow(double x, int n) {\n    if (n == 0) return 1;\n    if (n < 0) return 1 / myPow(x, -n);\n    double half = myPow(x, n / 2);\n    return n % 2 == 0 ? half * half : half * half * x;\n}",
+      "options": [
+        "`StackOverflowError`: `-n` is still `Integer.MIN_VALUE`",
+        "It returns the correct tiny value, like any negative n",
+        "It returns 0.0 once `x^(2^31)` overflows to infinity",
+        "`ArithmeticException`: negating MIN_VALUE overflows"
+      ],
+      "answer": 0,
+      "why": "An `int` holds −2³¹ to 2³¹ − 1, so +2³¹ does not fit and `-Integer.MIN_VALUE` wraps back to `Integer.MIN_VALUE`. The call `myPow(x, -n)` is therefore the same call again, `n < 0` is still true, and the recursion never shrinks until the stack overflows.\n\nInteger overflow in Java is silent; only the `Math.*Exact` methods throw on it. The fix is to widen first:\n\n```java\nlong N = n;\nif (N < 0) { x = 1 / x; N = -N; }\n```\n\n**Takeaway:** whenever you negate or `Math.abs` an `int` input, ask what happens at `Integer.MIN_VALUE`."
+    },
+    {
+      "q": "Does some subsequence of n = 100 positive integers sum to k, where k ≤ 10⁴? Plain pick / not-pick is O(2¹⁰⁰). What is the right fix?",
+      "options": [
+        "Sort ascending and `break` once an element exceeds the remaining sum",
+        "Take the largest element that still fits, never undoing a choice",
+        "Store each visited subset in a `HashSet` and skip repeats",
+        "Memoise on `(i, remaining)`: at most n · (k + 1) states, O(n · k)"
+      ],
+      "answer": 3,
+      "why": "`exists(i, remaining)` depends only on those two values, not on which elements were picked to get there, and many different pick paths reach the same pair. Caching it in a `Boolean[n][k + 1]` table solves each state once: about 100 · 10⁴ = 10⁶ states with O(1) work each.\n\nSorting and breaking prunes some branches but the worst case is still exponential. The greedy choice fails: `{3, 3, 4}` with k = 6 takes 4 first and then cannot reach 6. Hashing subsets does not help, because every subset is different, so there are still 2ⁿ of them.\n\n**Takeaway:** when a recursive function's answer depends only on a small state, memoise it; this is exactly how pick / not-pick becomes the subset-sum DP."
+    },
+    {
+      "q": "You write Subsets II (sorted input, duplicates allowed) in pick / not-pick style. Which not-pick step generates every distinct subset exactly once?",
+      "code": "void subs(int i, int[] a, List<Integer> cur, List<List<Integer>> res) {\n    if (i == a.length) { res.add(new ArrayList<>(cur)); return; }\n    cur.add(a[i]);\n    subs(i + 1, a, cur, res);\n    cur.remove(cur.size() - 1);\n    // not-pick step: ???\n}",
+      "options": [
+        "`subs(i + 1, a, cur, res);`, exactly as in plain subsets",
+        "Advance `j` past every copy of `a[i]`, then `subs(j, a, cur, res);`",
+        "`subs(i + 1, ...)`, but skip the pick when `a[i] == a[i - 1]`",
+        "`subs(i + 2, a, cur, res);` to jump over the next duplicate"
+      ],
+      "answer": 1,
+      "why": "If you decide *not* to take a value, you must not take any later copy of it either; otherwise \"skip the first 2, take the second\" rebuilds the subset \"take the first 2, skip the second\". So the skip branch jumps to the first index with a different value:\n\n```java\nint j = i + 1;\nwhile (j < a.length && a[j] == a[i]) j++;\nsubs(j, a, cur, res);\n```\n\nFor `{1, 2, 2}` that yields 6 subsets: `[1,2,2] [1,2] [1] [2,2] [2] []`. Plain `i + 1` produces `[1,2]` and `[2]` twice. Skipping on the pick side means the second 2 can never be picked, so `[2,2]` and `[1,2,2]` are lost.\n\n**Takeaway:** in pick / not-pick, \"not pick\" for a value means \"take this value zero more times\"."
+    }
+  ]
+}

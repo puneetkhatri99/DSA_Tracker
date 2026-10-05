@@ -1,0 +1,183 @@
+{
+  "easy": [
+    {
+      "q": "Which expression **clears** bit `i` of `n` (sets it to 0) and leaves every other bit unchanged, whether or not bit `i` was set? Bits are 0-indexed from the least significant end.",
+      "options": [
+        "`n ^ (1 << i)`",
+        "`n & (1 << i)`",
+        "`n & ~(1 << i)`",
+        "`n | ~(1 << i)`"
+      ],
+      "answer": 2,
+      "why": "`~(1 << i)` is a mask with every bit set except bit `i`. AND-ing with it forces bit `i` to 0 and keeps every other bit as it was (`x & 1 = x`). Trace with `n = 13` (`1101`) and `i = 2`: the mask ends in `1011`, so `1101 & 1011 = 1001` = 9.\n\nThe tempting `n ^ (1 << i)` **toggles** the bit: it clears bit 2 of 13 only because that bit happened to be 1, and on `n = 9` it would set it again. `n & (1 << i)` isolates bit `i` (giving 0 or `1 << i`), and `n | ~(1 << i)` turns every other bit on.\n\nTakeaway: set = `n | (1 << i)`, clear = `n & ~(1 << i)`, toggle = `n ^ (1 << i)`, check = `(n >> i) & 1`."
+    },
+    {
+      "q": "Which of these odd-number checks gives the **wrong** answer in Java for `n = -3`?",
+      "options": [
+        "`n % 2 == 1`",
+        "`(n & 1) == 1`",
+        "`n % 2 != 0`",
+        "`(n & 1) != 0`"
+      ],
+      "answer": 0,
+      "why": "In Java the result of `%` takes the sign of the dividend, so `-3 % 2` is `-1`, not `1`. That makes `n % 2 == 1` return `false` for every negative odd number.\n\nThe bit checks look at the lowest bit, which in two's complement is 1 for every odd number, negative or not: `-3` is `...11111101`, so `-3 & 1` is 1. `n % 2 != 0` is also correct, because it only asks whether the remainder is non-zero, whatever its sign.\n\nTakeaway: test oddness with `(n & 1) != 0` (or `n % 2 != 0`), never with `n % 2 == 1`."
+    },
+    {
+      "q": "How many times does the loop body run for `n = 44`?",
+      "code": "int count = 0;\nwhile (n != 0) {\n    n &= n - 1;\n    count++;\n}",
+      "options": [
+        "6, once per bit in the binary form of 44",
+        "32, once per bit of an `int`",
+        "2, once per trailing zero of 44",
+        "3, once per set bit of 44"
+      ],
+      "answer": 3,
+      "why": "`44` is `101100`. `n & (n - 1)` clears the lowest set bit: `101100 → 101000 → 100000 → 0`, so the loop runs 3 times and `count` ends as the number of set bits.\n\nSix is the length of the binary form, which is how often a naive `n >>= 1` loop would run; Brian Kernighan's trick skips the zeros entirely. Its cost is O(number of set bits), at most 32 for an `int`, and it terminates for negative numbers too.\n\nTakeaway: `n & (n - 1)` drops the rightmost 1. It powers popcount and the power-of-two check; in real code `Integer.bitCount(n)` gives the count directly."
+    },
+    {
+      "q": "Every number in `nums` appears exactly twice except one. Why does XOR-ing all the elements together return that single number?",
+      "options": [
+        "XOR keeps only the bits shared by all elements, and only the single number has them",
+        "`x ^ x = 0`, `x ^ 0 = x`, and order doesn't matter, so every pair cancels out",
+        "Duplicates cancel only when adjacent, so the array is sorted before XOR-ing",
+        "XOR computes the sum of the elements mod 2, which equals the single number"
+      ],
+      "answer": 1,
+      "why": "XOR is commutative and associative, so you can regroup the elements to put each pair together. Every pair gives `x ^ x = 0`, and `0 ^ single = single`. Trace `[4, 1, 2, 1, 2]`: regroup to `(1 ^ 1) ^ (2 ^ 2) ^ 4 = 0 ^ 0 ^ 4 = 4`.\n\nSorting is unnecessary because order doesn't affect XOR, so the solution is O(n) time and O(1) space. XOR is addition mod 2 **per bit position**, not for the whole number: the sum of the elements mod 2 is just 0 or 1. 'Bits shared by all elements' describes AND, not XOR.\n\nTakeaway: reach for XOR whenever things that appear an even number of times should disappear."
+    },
+    {
+      "q": "What is the minimum number of bit flips that turns `start = 10` into `goal = 7`, and which one-liner computes it?",
+      "options": [
+        "1, using `Math.abs(Integer.bitCount(start) - Integer.bitCount(goal))`",
+        "4, using `Integer.bitCount(start | goal)`",
+        "3, using `Integer.bitCount(start ^ goal)`",
+        "2, using `Integer.bitCount(goal & ~start)`"
+      ],
+      "answer": 2,
+      "why": "A bit has to be flipped exactly where `start` and `goal` differ, and XOR marks those positions with a 1: `1010 ^ 0111 = 1101`, three positions, so 3 flips.\n\nComparing popcounts (2 vs 3) ignores **where** the bits are: 10 and 7 differ in three places even though their counts differ by one. `goal & ~start` counts only the bits that must turn on (2 here) and misses bit 3, which must turn off. `start | goal` counts bits set in either, not bits that differ.\n\nTakeaway: 'how many positions differ' (Hamming distance) is `Integer.bitCount(a ^ b)`."
+    }
+  ],
+  "medium": [
+    {
+      "q": "`xorUpTo(n)` returns `1 ^ 2 ^ ... ^ n` in O(1). Which call gives `3 ^ 4 ^ ... ^ 9`, and what is its value?",
+      "code": "int xorUpTo(int n) {\n    switch (n % 4) {\n        case 0:  return n;\n        case 1:  return 1;\n        case 2:  return n + 1;\n        default: return 0;\n    }\n}",
+      "options": [
+        "`xorUpTo(3) ^ xorUpTo(9)`, which is 1",
+        "`xorUpTo(2) ^ xorUpTo(9)`, which is 2",
+        "`xorUpTo(9) - xorUpTo(2)`, which is -2",
+        "`xorUpTo(9) ^ xorUpTo(2) ^ 3`, which is 1"
+      ],
+      "answer": 1,
+      "why": "XOR prefixes work like prefix sums: `xor(l..r) = xorUpTo(l - 1) ^ xorUpTo(r)`, because XOR-ing `1 ^ 2` in twice cancels it and leaves `3..9`. Here `xorUpTo(2) = 3` (n % 4 == 2 gives n + 1) and `xorUpTo(9) = 1` (n % 4 == 1 gives 1), so the answer is `3 ^ 1 = 2`. Check directly: `3^4 = 7, ^5 = 2, ^6 = 4, ^7 = 3, ^8 = 11, ^9 = 2`.\n\nUsing `xorUpTo(3)` is the classic off-by-one: it cancels the 3 as well and gives `4 ^ ... ^ 9`. Subtraction is wrong because an XOR is undone by another XOR, not by minus, and XOR-ing 3 back in afterwards removes it again.\n\nTakeaway: range XOR = `prefix(l - 1) ^ prefix(r)`, with the O(1) prefix from the period-4 pattern."
+    },
+    {
+      "q": "In the bitmask subset loop below, which subset does `mask = 6` produce for `nums = {10, 20, 30}`?",
+      "code": "List<Integer> cur = new ArrayList<>();\nfor (int i = 0; i < nums.length; i++)\n    if ((mask & (1 << i)) != 0) cur.add(nums[i]);",
+      "options": [
+        "`[10, 20]`",
+        "`[10, 30]`",
+        "`[10, 20, 30]`",
+        "`[20, 30]`"
+      ],
+      "answer": 3,
+      "why": "`6` is `110` in binary: bit 0 is 0, bit 1 is 1, bit 2 is 1. Bit `i` decides whether `nums[i]` is included, so the subset is `{nums[1], nums[2]} = [20, 30]`.\n\nReading the binary string left to right as indices 0, 1, 2 gives `[10, 20]`, the most common mistake: bit 0 is the **rightmost** bit. `[10, 30]` is mask 5 (`101`) and `[10, 20, 30]` is mask 7.\n\nMasks `0` to `2^n - 1` map one-to-one onto all subsets, so the whole power set costs O(n · 2^n), which is why this is used only for n up to about 20. Takeaway: bit `i` of the mask, counted from the least significant end, says whether element `i` is in."
+    },
+    {
+      "q": "Every element of `nums` appears exactly **three** times except one, which appears once. Which approach finds it in O(n) time and O(1) extra space?",
+      "options": [
+        "For each of the 32 bit positions, count set bits over `nums`; keep the bit if count % 3 != 0",
+        "XOR all the elements: triples cancel the same way pairs do, leaving the single one",
+        "Count every value in a `HashMap` and return the key whose count is 1",
+        "Sort the array, then compare each group of three with its neighbours"
+      ],
+      "answer": 0,
+      "why": "At each bit position, every tripled number contributes 0 or 3 set bits, so the count there is a multiple of 3 plus the single number's bit. `count % 3` is therefore exactly the single number's bit, and setting those bits rebuilds it (bit 31 included, so a negative answer comes out right). That's 32 passes of O(n): O(n) time, O(1) space. The `ones`/`twos` trick does the same in one pass.\n\nPlain XOR fails because `x ^ x ^ x = x`: triples don't cancel, so you get the XOR of all the distinct values. The `HashMap` works but uses O(n) space, and sorting costs O(n log n).\n\nTakeaway: for 'every element appears k times except one', count each bit mod k."
+    },
+    {
+      "q": "Why is `ans[i] = ans[i >> 1] + (i & 1)` a correct way to fill the set-bit counts for every `i` from 1 to `n`?",
+      "code": "int[] ans = new int[n + 1];\nfor (int i = 1; i <= n; i++)\n    ans[i] = ans[i >> 1] + (i & 1);",
+      "options": [
+        "`i >> 1` equals `i - 1`, whose count differs from that of `i` by exactly one",
+        "`i >> 1` rounds `i` down to a power of two, which has a single set bit",
+        "`i >> 1` drops only bit 0 and is smaller than `i`, so its count is already known",
+        "`i & 1` counts all set bits of `i`, and `ans[i >> 1]` corrects for double counting"
+      ],
+      "answer": 2,
+      "why": "Shifting right by one removes the lowest bit and moves the rest down, so `i` and `i >> 1` share all set bits except bit 0. Adding `(i & 1)` puts that bit back. Because `i >> 1 < i` for `i >= 1`, the loop has already filled `ans[i >> 1]`. Example: `13 = 1101`, `13 >> 1 = 6 = 110` has 2 set bits, plus `13 & 1 = 1` gives 3.\n\n`i >> 1` is `i / 2`, not `i - 1`, and neighbours can differ by many bits (`8 = 1000` vs `7 = 0111`). It isn't a power of two either: `6` has two set bits. `i & 1` only reads bit 0.\n\nTakeaway: this DP (Counting Bits) fills all counts for 0..n in O(n) by reusing a smaller answer."
+    },
+    {
+      "q": "If you drop the `n > 0` guard, which `int` inputs would `(n & (n - 1)) == 0` wrongly report as powers of two?",
+      "code": "boolean isPowerOfTwo(int n) {\n    return n > 0 && (n & (n - 1)) == 0;\n}",
+      "options": [
+        "Only `0`, since it has no set bits",
+        "`0` and `Integer.MIN_VALUE`",
+        "Every negative even number",
+        "Only `Integer.MIN_VALUE`"
+      ],
+      "answer": 1,
+      "why": "The check tests for exactly one set bit: `n & (n - 1)` clears the lowest set bit, so the result is 0 when no other bit was set. `0` has **no** set bits and `0 & -1 = 0`, so it passes. `Integer.MIN_VALUE` is `1000...0`, a single set bit (the sign bit): `MIN_VALUE - 1` wraps to `MAX_VALUE = 0111...1`, their AND is 0, and it passes too even though it is negative.\n\nOther negative numbers have several set bits in two's complement (`-8` is `...11111000`), so they already fail. 'Only 0' is the common belief; an exhaustive check over all non-positive ints finds exactly these two.\n\nTakeaway: a power of two is 'positive and exactly one set bit', so keep the `n > 0`."
+    }
+  ],
+  "hard": [
+    {
+      "q": "Single Number III: two different values `a` and `b` appear once, every other value appears twice. Why are `a` and `b` guaranteed to land in different buckets below?",
+      "code": "int xor = 0;\nfor (int v : nums) xor ^= v;      // xor = a ^ b\nint diff = xor & -xor;\nint x = 0, y = 0;\nfor (int v : nums) {\n    if ((v & diff) != 0) x ^= v;\n    else y ^= v;\n}",
+      "options": [
+        "`diff` is the lowest set bit of whichever of `a` and `b` is larger",
+        "Any single bit would split them, because the pairs already cancelled in `xor`",
+        "`xor & -xor` always equals 1, which separates odd values from even ones",
+        "`diff` is a bit set in `a ^ b`, so exactly one of `a` and `b` has that bit"
+      ],
+      "answer": 3,
+      "why": "A bit is 1 in `a ^ b` exactly where `a` and `b` differ, and `xor & -xor` isolates the lowest such bit. So one of them has the bit and the other doesn't, and they go to different buckets. Each duplicate pair has identical bits, so both copies land in the same bucket and cancel there, leaving `x` and `y` as the two answers.\n\nTrace `[1, 2, 1, 3, 2, 5]`: `xor = 3 ^ 5 = 6 (110)`, `diff = 2 (010)`. The bucket with that bit gets `2, 3, 2 → 3`; the other gets `1, 1, 5 → 5`. An arbitrary bit doesn't work: on a bit where both `a` and `b` are 0 they would share a bucket. `diff` is not always 1 (it's 2 here).\n\nTakeaway: `x & -x` isolates the lowest set bit, and any set bit of `a ^ b` is a position where `a` and `b` differ."
+    },
+    {
+      "q": "What value does `mask` hold after this code runs?",
+      "code": "long mask = 0;\nmask |= 1 << 40;   // intent: set bit 40",
+      "options": [
+        "256: the `int` shift uses 40 % 32 = 8, so bit 8 is set",
+        "1099511627776: the value is widened to `long`, so bit 40 is set",
+        "0: the 1 is shifted past bit 31 of the `int` and lost",
+        "-2147483648: an `int` shift past 31 stops at the sign bit"
+      ],
+      "answer": 0,
+      "why": "`1 << 40` is an **int** expression, evaluated before anything is widened to `long`. For an `int` shift Java uses only the low 5 bits of the distance, so `1 << 40` is `1 << (40 % 32) = 1 << 8 = 256`. The widening for `|=` happens after the wrong value is computed, so bit 8 is set instead of bit 40.\n\nBits don't fall off to 0 and the shift doesn't stop at the sign bit; the **distance** wraps (which is also why `1 << 32 == 1`). The fix is `1L << 40`, a `long` shift whose distance is taken mod 64.\n\nTakeaway: in `long` bitmasks (more than 31 items, e.g. a visited set over 64 nodes) always write `1L << k`."
+    },
+    {
+      "q": "This divide-without-`/` keeps the absolute values in `int`. What does `divide(Integer.MIN_VALUE, 2)` return?",
+      "code": "int divide(int dividend, int divisor) {\n    boolean negative = (dividend < 0) ^ (divisor < 0);\n    int a = Math.abs(dividend), b = Math.abs(divisor);\n    int q = 0;\n    while (a >= b) {\n        int shift = 0;\n        while (a >= (b << (shift + 1))) shift++;\n        a -= b << shift;\n        q += 1 << shift;\n    }\n    return negative ? -q : q;\n}",
+      "options": [
+        "-1073741824, the correct quotient",
+        "It throws `ArithmeticException` from the `Math.abs` overflow",
+        "0, because `a` is still negative and the loop never runs",
+        "1073741824, because the sign is lost along the way"
+      ],
+      "answer": 2,
+      "why": "`Math.abs(Integer.MIN_VALUE)` overflows: `+2147483648` doesn't fit in an `int`, so it wraps back to `Integer.MIN_VALUE`. `Math.abs` never throws; only `Math.absExact` does. Now `a` is negative, `a >= b` is false on the first check, `q` stays 0 and the method returns 0 instead of `-1073741824`.\n\nThe standard fix widens first: `long a = Math.abs((long) dividend)`, with `long` for the shifted divisor too so `b << (shift + 1)` can't overflow. The only input whose true answer doesn't fit in an `int` at all is `MIN_VALUE / -1`, which is special-cased to `MAX_VALUE`.\n\nTakeaway: before `abs` or negation of an `int` that may be `MIN_VALUE`, widen to `long`."
+    },
+    {
+      "q": "What does this print for `mask = 10` (binary `1010`)?",
+      "code": "for (int sub = mask; sub > 0; sub = (sub - 1) & mask)\n    System.out.print(sub + \" \");",
+      "options": [
+        "`10 9 8 7 6 5 4 3 2 1`",
+        "`10 8 2`",
+        "`10 2 8`",
+        "`8 2`"
+      ],
+      "answer": 1,
+      "why": "`sub - 1` turns the lowest set bit of `sub` into 0 and every bit below it into 1, and `& mask` drops the bits that aren't in `mask`. The result is the next smaller submask: `10 (1010) → 9 & 10 = 8 (1000) → 7 & 10 = 2 (0010) → 1 & 10 = 0`, and the loop stops at 0.\n\nIt visits only the non-empty submasks (2² − 1 = 3 here), in decreasing order, starting with `mask` itself, never every number below `mask`. Summed over all masks of n bits this costs O(3^n): each bit is outside the mask, in the mask but not the submask, or in both.\n\nTakeaway: `sub = (sub - 1) & mask` is the standard way to walk the submasks of a mask in bitmask DP."
+    },
+    {
+      "q": "A shuffle calls `xorSwap(arr, i, j)` and sometimes `i == j`. With `arr = {7}`, what is `arr[0]` after `xorSwap(arr, 0, 0)`?",
+      "code": "void xorSwap(int[] arr, int i, int j) {\n    arr[i] ^= arr[j];\n    arr[j] ^= arr[i];\n    arr[i] ^= arr[j];\n}",
+      "options": [
+        "7, because swapping a slot with itself is a no-op",
+        "14, because the first step doubles the value",
+        "0, because the first step zeroes the only copy",
+        "-8, because the three XORs flip every bit of 7"
+      ],
+      "answer": 2,
+      "why": "With `i == j`, `arr[i]` and `arr[j]` are the **same** memory slot. Step 1 does `arr[0] = 7 ^ 7 = 0`, which destroys the only copy of the value; steps 2 and 3 then compute `0 ^ 0 = 0`.\n\nThe XOR swap relies on two separate locations: with `a = 7, b = 3` it goes `a = 4, b = 7, a = 3`, but that trace assumes writing `a` doesn't change `b`. Expecting 7 is the natural 'swap with itself does nothing' intuition, which is exactly the bug in shuffles where `j` can equal `i`.\n\nTakeaway: guard with `if (i != j)`, or simply use a temp variable, which is clearer and just as fast."
+    }
+  ]
+}

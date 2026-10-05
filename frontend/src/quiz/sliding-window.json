@@ -1,0 +1,171 @@
+{
+  "easy": [
+    {
+      "q": "Which of these problems can be solved with a plain variable-size sliding window, where both pointers only move forward, in O(n)?",
+      "options": [
+        "Longest subarray with sum exactly k, where values may be negative",
+        "Longest increasing subsequence, where elements need not be adjacent",
+        "Longest subarray with sum at most k, where all values are non-negative",
+        "Number of subarrays whose sum is divisible by k, with negative values"
+      ],
+      "answer": 2,
+      "why": "A window works when the condition is **monotonic**: with non-negative values, adding an element can only raise the sum and removing one can only lower it. So once `[l, r]` is over the limit, every wider window starting at `l` is too, and `l` can move right for good.\n\nWith negative values that breaks: a later negative number can bring an over-limit sum back down, so dropping the left element may lose the answer. \"Sum exactly k\" and \"divisible by k\" with negatives are solved with prefix sums + a HashMap instead. Longest increasing subsequence is not about a contiguous range at all (it is DP / binary search).\n\nTakeaway: contiguous range + monotonic condition (growing makes it worse, shrinking makes it better) is the signal for a sliding window."
+    },
+    {
+      "q": "What does `maxSumOfK(new int[]{2, 1, 5, 1, 3, 2}, 3)` return?",
+      "code": "int maxSumOfK(int[] a, int k) {\n    int sum = 0, best = Integer.MIN_VALUE;\n    for (int r = 0; r < a.length; r++) {\n        sum += a[r];\n        if (r >= k) sum -= a[r - k];\n        if (r >= k - 1) best = Math.max(best, sum);\n    }\n    return best;\n}",
+      "options": ["9", "14", "8", "11"],
+      "answer": 0,
+      "why": "The windows of size 3 are `[2,1,5] = 8`, `[1,5,1] = 7`, `[5,1,3] = 9` and `[1,3,2] = 6`, so the maximum is **9**. Each step adds the entering element `a[r]` and, once `r >= k`, subtracts the leaving element `a[r - k]`, so the sum is updated in O(1) instead of being recomputed in O(k).\n\n14 is the whole array's sum (what you get if the subtraction is forgotten), 8 is only the first window, and 11 is an off-by-one that keeps 4 elements (`[5,1,3,2]`).\n\nTakeaway: a fixed window is \"add `a[r]`, remove `a[r - k]`, record once `r >= k - 1`\": O(n) time, O(1) space."
+    },
+    {
+      "q": "The variable-window template has a `while` loop that moves `l` inside the `for` loop over `r`. What is its total time on an array of length n, if each window update is O(1)?",
+      "options": [
+        "O(n²), because the inner loop can run up to n times for each r",
+        "O(n), because l and r only move forward, so the inner loop runs at most n times in total",
+        "O(n log n), because each shrink roughly halves the size of the window",
+        "O(n · k), because the inner loop runs at most k times, where k is the window size"
+      ],
+      "answer": 1,
+      "why": "Count pointer moves, not loop nesting. `r` moves right n times, and `l` also only moves right and never passes the end. Every iteration of the inner `while` moves `l` one step, so over the whole run the inner loop executes at most n times **in total**: at most 2n window updates, which is **O(n)**.\n\nO(n²) is the classic misreading: one particular `r` can trigger many shrinks, but those shrinks are then used up and can never happen again (amortised analysis).\n\nTakeaway: when both pointers only move forward, the work is bounded by how far they can travel, not by how deeply the loops are nested."
+    },
+    {
+      "q": "A valid window currently spans `l = 3` to `r = 7` (both inclusive). How many elements does it hold, and how many subarrays that **end at index r** lie entirely inside it?",
+      "options": [
+        "4 elements and 4 subarrays",
+        "5 elements and 15 subarrays",
+        "4 elements and 10 subarrays",
+        "5 elements and 5 subarrays"
+      ],
+      "answer": 3,
+      "why": "An inclusive window has `r - l + 1 = 7 - 3 + 1 = 5` elements; `r - l = 4` is the classic off-by-one. The subarrays ending at `r` inside it are `[3..7], [4..7], [5..7], [6..7], [7..7]`, one per possible start, so there are also **5**.\n\n15 counts every subarray inside the window (5·6/2), but most of those end before `r` and were already counted at earlier values of `r`.\n\nTakeaway: this is why the \"at most K\" counting trick does `count += r - l + 1`. Each `r` adds exactly the new subarrays ending at `r`, so nothing is counted twice."
+    },
+    {
+      "q": "Two Sum on a **sorted** array starts with `l = 0`, `r = n - 1`. When `a[l] + a[r] < target` it does `l++`. Why can index `l` be discarded for good?",
+      "options": [
+        "a[r] is the largest partner left, so if a[l] + a[r] is too small, no partner can work for a[l]",
+        "a[l] is the smallest remaining value, and the smallest value is never part of an answer",
+        "Moving r left would also work, because the sum only needs to change, not to grow",
+        "Index l has already been compared with every other index, so it is fully checked"
+      ],
+      "answer": 0,
+      "why": "Every partner still available for `a[l]` sits in `(l, r]`, and because the array is sorted the largest of them is `a[r]`. If `a[l] + a[r] < target`, then `a[l] + a[j] <= a[l] + a[r] < target` for every remaining `j`, so `a[l]` is in no answer and dropping it loses nothing.\n\nMoving `r` left would make the sum even smaller, moving away from the target, so it is not an equivalent choice. Being the smallest value is not the reason either: `a[l]` would pair fine with a large enough partner, there just is none left. And `l` has only been paired with the `r` values seen so far, not with every index: the step is safe because of sorting, not because of exhaustive checking.\n\nTakeaway: each move of converging pointers rules out a whole row of pairs, which is how O(n²) pairs are covered in O(n)."
+    }
+  ],
+  "medium": [
+    {
+      "q": "This \"longest subarray with at most k distinct values\" throws `ArrayIndexOutOfBoundsException` for `a = [1, 2, 1, 3]`, `k = 2`. Which change makes it correct for every input?",
+      "code": "int longest(int[] a, int k) {\n    Map<Integer, Integer> freq = new HashMap<>();\n    int l = 0, best = 0;\n    for (int r = 0; r < a.length; r++) {\n        freq.merge(a[r], 1, Integer::sum);\n        while (freq.size() > k) {\n            freq.merge(a[l], -1, Integer::sum);\n            l++;\n        }\n        best = Math.max(best, r - l + 1);\n    }\n    return best;\n}",
+      "options": [
+        "Change `while (freq.size() > k)` to `if (freq.size() > k)`",
+        "Use `freq.put(a[l], freq.get(a[l]) - 1)` for the decrement",
+        "Delete the key from `freq` once its count reaches 0",
+        "Change the loop condition to `freq.size() >= k`"
+      ],
+      "answer": 2,
+      "why": "`merge(key, -1, Integer::sum)` stores 0 instead of deleting the key (merge only removes a key when the function returns `null`), so `freq.size()` still counts values that left the window. At `r = 3` the map holds keys `{1, 2, 3}`, the size stays 3 however far `l` moves, and `l` runs off the end of the array.\n\nThe fix is `if (freq.merge(a[l], -1, Integer::sum) == 0) freq.remove(a[l]);`, which makes `size()` the real number of distinct values; the answer becomes 3. The `if` version stops the crash and even returns 3 here, but the stale keys keep the size above k forever, so the window can never grow again: on `[1, 2, 1, 3, 3, 3, 3]` it returns 3 instead of 5. `put`/`get` leaves the same zero entries, and `>= k` still crashes.\n\nTakeaway: when `map.size()` is your distinct count, remove a key as soon as its count reaches 0."
+    },
+    {
+      "q": "Count the subarrays that contain **exactly** k odd numbers (n up to 10^5). Which approach is correct and O(n)?",
+      "options": [
+        "One window that shrinks while the odd count exceeds k, adding r − l + 1 at each r",
+        "atMost(k) − atMost(k − 1), where atMost(x) counts subarrays with at most x odd numbers",
+        "A fixed window of size k, counting the windows in which all k elements are odd",
+        "Sort the array, then move two pointers inward from both ends counting odd numbers"
+      ],
+      "answer": 1,
+      "why": "\"Exactly k\" is not monotonic: a window with k odds stays at k when an even number is added, so there is no single rule for when to shrink. \"At most k\" is monotonic, and every subarray with exactly k odds is counted by `atMost(k)` but not by `atMost(k - 1)`, so the difference counts exactly those. For `[1, 1, 2, 1, 1]` and k = 3: atMost(3) = 14, atMost(2) = 12, answer 2.\n\nThe single shrinking window in the first option *is* `atMost(k)`, so it also counts subarrays with fewer than k odds. A size-k window misses longer subarrays that contain even numbers, and sorting destroys contiguity.\n\nTakeaway: count \"exactly K\" as `atMost(K) - atMost(K - 1)`; Binary Subarrays With Sum and Subarrays with K Different Integers use the same trick."
+    },
+    {
+      "q": "You must take exactly k cards, each from the left or the right end of a row of n cards, to maximise the total. Which reformulation gives the standard O(n) solution?",
+      "options": [
+        "Find the window of k consecutive cards with the largest sum",
+        "Take the larger of the two end cards, k times in a row",
+        "Sort the cards and take the k largest values",
+        "Find the window of n − k consecutive cards with the smallest sum"
+      ],
+      "answer": 3,
+      "why": "Whatever mix of left and right cards you take, the cards left behind always form one contiguous block of length `n - k`. So maximising what you take is the same as minimising that block: `answer = total - (min sum of a window of size n - k)`, one fixed-size window in O(n).\n\nThe best size-k window anywhere is wrong because a middle block cannot be reached from the ends (for `[1, 100, 1]` with k = 1 it would pick 100). Greedy on the larger end fails too: for `[5, 1, 100, 1, 6]` with k = 3 it takes 6, 5, 1 = 12, while the last three cards give 107. Sorting ignores the ends rule entirely.\n\nTakeaway: when choices come from both ends, look at the complement, which is a contiguous window."
+    },
+    {
+      "q": "This should return the length of the shortest subarray with sum ≥ target (all values positive). What does it return for `a = [2, 3, 1, 2, 4, 3]`, `target = 7`?",
+      "code": "int minLen(int[] a, int target) {\n    int l = 0, sum = 0, best = Integer.MAX_VALUE;\n    for (int r = 0; r < a.length; r++) {\n        sum += a[r];\n        while (sum >= target) sum -= a[l++];\n        best = Math.min(best, r - l + 1);\n    }\n    return best == Integer.MAX_VALUE ? 0 : best;\n}",
+      "options": ["1", "2", "0", "3"],
+      "answer": 0,
+      "why": "It returns **1**, which is wrong: the correct answer is 2 (`[4, 3]`). The length is recorded *after* the shrink loop, when the window is no longer valid. Already at `r = 0` the window `[2]` has sum 2 < 7, yet `best` becomes 1.\n\nFor a shortest-window problem the window is valid only *inside* the loop, so record first, then shrink: `while (sum >= target) { best = Math.min(best, r - l + 1); sum -= a[l++]; }`. That version returns 2. 0 would require `best` to stay at `MAX_VALUE`, and 3 is a valid but not minimal window (`[1, 2, 4]`).\n\nTakeaway: longest-window problems update after shrinking (the window is valid again); shortest-window problems update inside the shrink loop, before removing."
+    },
+    {
+      "q": "Longest Repeating Character Replacement: you may change at most k characters of a window so all its characters become equal. With `cnt[]` holding the letter counts of `[l, r]`, when is the window **invalid**?",
+      "options": [
+        "When the number of distinct letters in the window exceeds k + 1",
+        "When the count of the most frequent letter in the window exceeds k",
+        "When (r − l + 1) − maxFreq > k, where maxFreq is the largest count in cnt",
+        "When (r − l + 1) − maxFreq < k, where maxFreq is the largest count in cnt"
+      ],
+      "answer": 2,
+      "why": "The cheapest way to make the window uniform is to keep its most frequent letter and change everything else, which costs `(r - l + 1) - maxFreq` changes. The window is invalid exactly when that cost exceeds k.\n\nCounting distinct letters is the tempting wrong model: `\"AABBB\"` has only 2 distinct letters, yet with k = 1 it needs 2 changes. \"maxFreq > k\" measures the letters you keep rather than the ones you change, and \"< k\" flips the inequality, so windows that still have spare changes would be shrunk.\n\nTakeaway: the cost of a window is its length minus its majority count; that is the state to maintain."
+    }
+  ],
+  "hard": [
+    {
+      "q": "The shrink-while-valid window below is used for \"shortest subarray with sum ≥ K\", but the array may contain negative values. What does it return for `a = [3, -2, 4]`, `K = 4`, and what is the true answer?",
+      "code": "int shortest(int[] a, int K) {\n    int l = 0, sum = 0, best = Integer.MAX_VALUE;\n    for (int r = 0; r < a.length; r++) {\n        sum += a[r];\n        while (sum >= K) {\n            best = Math.min(best, r - l + 1);\n            sum -= a[l++];\n        }\n    }\n    return best == Integer.MAX_VALUE ? -1 : best;\n}",
+      "options": [
+        "Returns 1; the true answer is 1",
+        "Returns 3; the true answer is 1",
+        "Returns -1; the true answer is 1",
+        "Returns 3; the true answer is 3"
+      ],
+      "answer": 1,
+      "why": "Trace: r = 0 gives sum 3, r = 1 gives sum 1, r = 2 gives sum 5 ≥ 4, so `best = 3`. Removing `a[0] = 3` drops the sum to 2, the loop stops, and the method returns **3**. But `[4]` alone has sum 4, so the true answer is 1.\n\nThe loop stopped because removing 3 made the window invalid, yet removing the next element (-2) would have made it valid again. With negatives, shrinking no longer moves the sum in one direction, so \"stop once invalid\" is unsafe. The correct O(n) method uses prefix sums with a monotonic deque of increasing prefix values.\n\nTakeaway: before writing a sliding window, check that growing and shrinking change the condition in one direction only."
+    },
+    {
+      "q": "In this O(n) solution, `maxFreq` is never decreased when `l` moves, so after a shift it can be larger than the real top count in the window. Why is the returned answer still correct?",
+      "code": "int characterReplacement(String s, int k) {\n    int[] cnt = new int[26];\n    int l = 0, maxFreq = 0;\n    for (int r = 0; r < s.length(); r++) {\n        maxFreq = Math.max(maxFreq, ++cnt[s.charAt(r) - 'A']);\n        if (r - l + 1 - maxFreq > k) cnt[s.charAt(l++) - 'A']--;\n    }\n    return s.length() - l;\n}",
+      "options": [
+        "maxFreq never really goes stale, because removing s[l] can never lower the top count",
+        "It is not always correct; it is a heuristic that happens to pass the usual tests",
+        "The `cnt[...]--` line implicitly recomputes maxFreq whenever the window moves",
+        "The window never shrinks, and its size never exceeds maxFreq + k, a real past count plus k"
+      ],
+      "answer": 3,
+      "why": "With `if` instead of `while`, the window size never decreases: each step it either grows by 1 or slides by 1. It only grows while `size - maxFreq <= k`, so its size never exceeds `maxFreq + k`. Even a stale `maxFreq` was a real count of one letter in some earlier window, and stretching that window to length `maxFreq + k` gives a window fixable with at most k changes, so every size reached is genuinely achievable.\n\nTo beat the current size, some window needs a letter count above the old `maxFreq`, and that count *does* update `maxFreq`; the stale value only lets the window slide at a size already proven. The first option is false: removing `s[l]` can lower the top count, which is exactly the staleness.\n\nTakeaway: in longest-window problems the window may slide instead of shrink, because only a strictly longer window matters; the answer is the final size `s.length() - l`."
+    },
+    {
+      "q": "Count substrings containing at least one `a`, one `b` and one `c` (s has only these letters). After the `while` loop the code adds `l`. What does `l` count at that moment?",
+      "code": "int numberOfSubstrings(String s) {\n    int[] cnt = new int[3];\n    int l = 0, res = 0;\n    for (int r = 0; r < s.length(); r++) {\n        cnt[s.charAt(r) - 'a']++;\n        while (cnt[0] > 0 && cnt[1] > 0 && cnt[2] > 0)\n            cnt[s.charAt(l++) - 'a']--;\n        res += l;\n    }\n    return res;\n}",
+      "options": [
+        "Substrings ending at r that contain all three letters: any start in 0..l−1 works",
+        "Substrings starting at l that contain all three letters, for some end ≥ r",
+        "Substrings ending at r that are missing at least one of the three letters",
+        "Letters removed from the window so far, which matches the answer by coincidence"
+      ],
+      "answer": 0,
+      "why": "The loop removes characters while `[l, r]` still has all three letters, so it stops at the first `l` where `[l, r]` is missing one; that means `[l - 1, r]` did contain all three. Every start `0 .. l - 1` gives a superset of `[l - 1, r]`, so all those substrings are valid, and starts `l .. r` are not: exactly `l` valid substrings end at `r`. For `\"abcabc\"` the additions are 0, 0, 1, 2, 3, 4, total 10.\n\nThe substrings ending at `r` that miss a letter are the other `r - l + 1` starts, the complement.\n\nTakeaway: for \"at least\" counting, shrink until the window just becomes invalid; then every start left of `l` is a valid start for this `r`."
+    },
+    {
+      "q": "Binary Subarrays With Sum computes `atMost(goal) - atMost(goal - 1)` with the helper below, which has **no** `if (goal < 0) return 0;` guard. What happens for `a = [0, 0, 1]`, `goal = 0`?",
+      "code": "int atMost(int[] a, int goal) {\n    int l = 0, sum = 0, count = 0;\n    for (int r = 0; r < a.length; r++) {\n        sum += a[r];\n        while (sum > goal) sum -= a[l++];\n        count += r - l + 1;\n    }\n    return count;\n}",
+      "options": [
+        "Returns 3 correctly, because atMost(a, −1) naturally comes out as 0",
+        "Loops forever, because the condition sum > −1 never becomes false",
+        "Throws ArrayIndexOutOfBoundsException, because l runs past the end",
+        "Returns 0, because every window is invalid when the goal is −1"
+      ],
+      "answer": 2,
+      "why": "`atMost(a, 0)` is fine and returns 3, but `atMost(a, -1)` breaks: the sum of a binary window is never negative, so `sum > -1` is always true. At `r = 0` the loop removes `a[0]`, `a[1]`, `a[2]` and then reads `a[3]`, throwing `ArrayIndexOutOfBoundsException`. It is not an infinite loop, because `l++` runs on every iteration and soon leaves the array.\n\n\"At most -1\" has no valid window, so the guard `if (goal < 0) return 0;` is required; the distinct-count version needs the same guard for `atMost(k - 1)` when k = 0.\n\nTakeaway: always test the K = 0 case of `atMost(K) - atMost(K - 1)`."
+    },
+    {
+      "q": "Two-pointer Trapping Rain Water: when `h[l] < h[r]` it adds `leftMax - h[l]` without knowing the true maximum to the right of `l`. Why is that safe?",
+      "code": "while (l < r) {\n    if (h[l] < h[r]) {\n        leftMax = Math.max(leftMax, h[l]);\n        water += leftMax - h[l++];\n    } else {\n        rightMax = Math.max(rightMax, h[r]);\n        water += rightMax - h[r--];\n    }\n}",
+      "options": [
+        "Water at an index depends only on walls to its left; walls on its right never matter",
+        "l only passed walls shorter than the current h[r], so leftMax < h[r] ≤ the true right max",
+        "The variable rightMax is always ≥ leftMax, because both pointers move toward the middle",
+        "It can under-count at l, and the missing water is added back later when r passes there"
+      ],
+      "answer": 1,
+      "why": "Water above `i` is `min(maxLeft(i), maxRight(i)) - h[i]`, so you only need to know which bound is smaller. `l` advances only while `h[l] < h[r]`, and `r` cannot move while the left walls are shorter than `h[r]`, so every wall in `h[0..l]` is shorter than the current `h[r]`: `leftMax < h[r] <= maxRight(l)`. The minimum is `leftMax`, and `leftMax - h[l]` is the exact water at `l`, computed once and never corrected.\n\nThe running `rightMax` says nothing here (it starts at 0 and can be below `leftMax`), and water certainly depends on the right side; the point is that the right side is already known to be high enough.\n\nTakeaway: process the side with the lower wall, because its bound is settled; this turns the prefix/suffix max arrays (O(n) space) into O(1) space."
+    }
+  ]
+}

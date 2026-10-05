@@ -1,47 +1,142 @@
 # DSA Tracker
 
-A topic-wise Java DSA roadmap (Striver A2Z + NeetCode 150/250 + Blind 75 + LeetCode Top Interview 150 + LeetCode 75, deduped to 611 questions) plus Java notes.
+Two Java DSA roadmaps plus Java notes, with accounts so you and the people you invite each keep your own progress.
 
-## Run
+- **Learning Series**: Striver's A2Z sheet plus five easy warm-ups, 420 questions, ordered so that every question only needs what came before it. The star-pattern printing problems are left out, and problems the sheet repeats are merged into one (the extra copies' links become chips). Each question links to LeetCode and GFG where the problem exists there, plus Striver's TUF page, video and article.
+- **Practice 50**: 20 easy, 20 medium and 10 hard well-known interview problems (NeetCode 150 / Blind 75 / LeetCode 150) that are **not** in A2Z. They test you on problems you haven't seen, and the topics are mixed within each difficulty.
 
-```sh
-node server.js      # → http://localhost:3000
-```
+The backend is FastAPI + MongoDB (`backend/`), the frontend is React + TypeScript built with Vite (`frontend/`). In production FastAPI serves the built frontend, so it runs as one service.
 
-No npm install needed. Your progress (solved date, revise flag, star, notes) is saved to `progress.json` in this folder. Commit it to keep a backup.
+## First-time setup
+
+You need Python 3.12+, Node 20+ and a MongoDB database (for example a free Atlas cluster).
+
+1. Create `.env` in the repo root (git ignores it) from `.env.example`:
+
+   ```sh
+   MONGODB_URI=mongodb+srv://USER:PASSWORD@CLUSTER.mongodb.net/?retryWrites=true&w=majority
+   DB_NAME=DSA_tracker
+   COOKIE_SECURE=false   # local http only; leave it out when deployed on https
+   ```
+
+   In Atlas, **Network Access** must allow your IP (and later your host's).
+
+2. Install, load the content and create your admin account:
+
+   ```sh
+   cd backend
+   python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+   .venv/bin/python -m app.cli seed                                     # roadmaps + notes from content/
+   .venv/bin/python -m app.cli create-admin --email you@example.com --name "Your Name"   # asks for a password
+   .venv/bin/python -m app.cli import-progress --email you@example.com ../progress.json  # optional: progress from the old app
+   ```
+
+3. Build the frontend and start the server:
+
+   ```sh
+   cd frontend && npm install && npm run build && cd ..
+   cd backend && .venv/bin/uvicorn app.main:app --port 8000     # → http://localhost:8000
+   ```
+
+For frontend work, run `npm run dev` in `frontend/` as well and open http://localhost:5173. Vite reloads on save and passes `/api` calls to uvicorn on :8000.
+
+## Accounts
+
+- **Login** puts a session cookie in your browser that lasts **30 days** (httpOnly, so page scripts can't read it). Log out from the account menu at the top right. Passwords are hashed with argon2, and 10 wrong passwords for one email lock it for 15 minutes.
+- **Inviting someone**: account menu → **Invite people** → **New invite link**. The link is copied for you, and its row's button shows **✓ Copied** for a few seconds (or **Copy failed** if the browser blocked the clipboard; then select the link and copy it yourself). **Copy** copies it again later. It creates one account and expires after 7 days; you can revoke it before it is used. There is no public sign-up.
+- Everyone has their own progress, notes, code and review schedule. Roadmaps and study notes are shared.
+- **Study notes**: only the admin sees **Edit note** (markdown with a live preview) and **New note**. Edits are saved in MongoDB. Running `seed` again never overwrites an edited note (`seed --force-notes` resets them to the files in `content/`).
+
+## Today
+
+The app opens on **Today**, your plan for the day:
+
+- **Reviews due**: every solved question whose spaced-repetition review is due, from both roadmaps.
+- **New today**: the next unsolved questions in the Learning Series. Set a **finish date** (tomorrow or later) and the daily number is worked out for you (questions left ÷ days left, today and the finish day included, fixed at the start of the day). With no date, or a date that is today or has passed, it is 3 a day (`DAILY_NEW` in `frontend/src/lib.ts`).
+- **Activity**: the last 12 months, one block per month. The header counts questions **solved** and **reviewed** separately; hover a day or a month name for its own solved and reviewed counts (the colour shows both together). Also your active days, longest streak and current streak.
+
+## Solving a question
+
+- When you tick a question it is saved as *Solved alone*, and a **How did it go?** dropdown appears on the row: *Solved alone*, *Needed a hint* or *Saw the solution*. You can change it any time. Needing a hint or seeing the solution brings the next review forward to tomorrow, and seeing the solution also marks the question to revise.
+- **Timer**: opening an unsolved question (its title or a link chip) starts a timer in the header, and ticking it records the minutes. You can also start or stop it with the timer button on the row. Only one timer runs at a time.
+- **LeetCode links**: every Learning Series question has a LeetCode chip. Where the exact problem is not on LeetCode, the chip is **LC (similar)**: a free LeetCode problem that practises the same idea.
+- **Your own LeetCode link**: a question with no LeetCode link at all (in a roadmap you add) gets a **+ LC** chip. Paste a LeetCode URL or just the slug (`two-sum`). It is shown first and used for the title link. The pencil chip edits it; leave it blank to remove it.
+- **Notes and code**: the pencil button opens your notes and a Java code box. Tab indents inside the code box, and the code is shown highlighted once you click away; click it to edit again.
+- Every change is saved to MongoDB within half a second (the header says *Saved*). Each question is saved on its own, so two devices never overwrite each other's work.
 
 ## How the roadmap works
 
-- Topics are ordered as a build-up (basics → sorting → arrays → … → graphs → DP → tries). The **Topic map** shows the prerequisite graph.
-- Each question lives in the latest topic it needs. Its 🔒 chips list the other earlier topics it depends on. Example: *Sort List* sits in Linked List and needs Sorting + Two Pointers.
-- A topic counts as done once all of its questions are solved. To loosen that, change `PREREQ_DONE` at the top of `app.js`.
-- **Next up** jumps to the first unsolved question whose prerequisites are met. It respects your filters, so with the filter on "Blind 75" it only walks Blind 75.
+- The Learning Series follows Striver's steps (basics → sorting → arrays → bits → maths → hashing → binary search → strings → sliding window → recursion → … → graphs → hard backtracking → DP → tries), and each step's sub-steps are folding sections inside it, with their own solved count (filters open them all, and **Next up** opens the one it jumps to). Inside a sub-step the questions go from the building block to the problems that use it, easier ones first, with the Hard ones at the end of the group. The **Topic map** shows which steps build on which.
+- A topic counts as done once 70% of its questions are solved (`PREREQ_DONE` in `frontend/src/lib.ts`; 1.0 = every question).
+- **Next up** jumps to the first unsolved question, following the sheet's order. It respects your filters.
+- Every Learning Series question carries Striver's **pattern** tags (Two Pointer, Monotonic Stack / Queue, Search on Answer …). The pattern filter shows one pattern across all topics.
+- Striver sorts his questions into three tiers: basic, core and pro. Pro questions are harder or asked less often, and show a **Pro** tag. A Pro question that is on three or more of Blind 75, NeetCode 150, LeetCode Top Interview 150, Top 100 Liked and LeetCode 75 is counted as core here. Choose **Essentials only** in the filter to hide them. The counts and Next up follow the filter.
 
 ## Spaced repetition
 
-Solving a question schedules reviews after 1, 3, 7, 15, 30 and 60 days (`REVIEW_DAYS` in `app.js`).
+Reviews follow the steps 1, 3, 7, 15, 30 and 60 days (`REVIEW_DAYS` in `frontend/src/lib.ts`). Solving alone starts at the 3-day step; needing a hint or the solution starts at the 1-day step.
 
-- When reviews are due, a 🔔 badge appears in the header, the tab title shows the count, and a banner appears on the roadmap. Click either to see only the due questions.
+- When reviews are due, a bell badge appears in the header, the tab title shows the count, and a banner appears on the roadmap. Click either to see only the due questions.
 - To review, re-solve the question without looking at your old code, then click **Remembered** to move to the next interval or **Forgot** to start again at 1 day.
 - After the 60-day review the question counts as *mastered*.
-- The ↻ button is separate from all of this. It is your own "revise this" flag.
+- The revise button (circular arrow) is separate from all of this. It is your own "revise this" flag.
 
-## Add more content
+## Practice
 
-Everything is registered in `content.json`.
+- **Mock interview** (button on Practice 50): one random unsolved question with a 45-minute countdown and the topic hidden. **Show topic** reveals it; using it records the question as solved with a hint.
+- **Quiz**: every Learning Series topic has 15 multiple-choice questions, 5 each at easy, medium and hard, with a full explanation for every question. Answer one at a time (or click *I don't know, show the answer*); the options are shuffled on every try. Getting 4 of 5 right passes a level, and your **level** in a topic is the hardest level you have passed. The quiz page lists every topic with its level and your best score at each difficulty; best scores are saved with your progress.
 
-- **A note**: drop a `.md` file under `notes/` and add `{ "id", "title", "file" }` to a section in `content.json`. Markdown supports ```` ```java ```` highlighting and ```` ```mermaid ```` diagrams.
-- **A roadmap**: add `roadmaps/<id>.json` and list it under `roadmaps` in `content.json`. The format is:
+## Keyboard shortcuts
+
+- `/` focuses the search box, `n` jumps to Next up, `Esc` leaves a text box.
+- In the quiz, `1`–`4` pick an option and `Enter` goes to the next question.
+
+## Deploy on Vercel
+
+The repo is set up as one Vercel project: `pyproject.toml` tells Vercel where the FastAPI app is (`backend.app.main:app`) and to build the React app during the deploy, and `vercel.json` keeps the frontend's `node_modules` out of the Python bundle. Vercel serves the built site from its CDN and sends `/api/...` to FastAPI, all on one domain, so the login cookie just works.
+
+1. **Atlas → Network Access → Add IP Address → Allow access from anywhere** (`0.0.0.0/0`). Vercel has no fixed IP addresses, so this is required; make sure your database user's password is strong.
+2. **vercel.com → Add New → Project →** import this GitHub repo. Leave the framework as detected (FastAPI) and the root directory as the repo root.
+3. **Environment Variables** (same screen, or Settings → Environment Variables later):
+   - `MONGODB_URI`: the value from your `.env`
+   - `DB_NAME`: `DSA_tracker`
+
+   Do **not** add `COOKIE_SECURE`; Vercel is https, so the secure default is right.
+4. **Deploy.** Vercel installs the Python packages, runs `npm ci && npm run build` in `frontend/`, and gives you a `https://<project>.vercel.app` address.
+5. **Settings → Functions → Function Region**: pick the region closest to your Atlas cluster (Atlas shows it on the cluster card), then redeploy. Each request makes a few database calls, so this is the biggest speed win.
+
+Vercel builds production from the repo's default branch (`main`); other branches get preview deployments behind Vercel login. The database already holds the content and your account, so you can log in right away. Against a new database, run `seed` and `create-admin` once from your machine with that `MONGODB_URI`.
+
+Invite links use whatever address you open the app on, so create them from the Vercel URL (or your custom domain), not from localhost.
+
+### Other hosts
+
+The `Dockerfile` builds the frontend and runs everything in one container, for Render, Railway or Fly: create a web service from the repo, set `MONGODB_URI` and `DB_NAME`, and allow the host in Atlas Network Access.
+
+## Add content
+
+Roadmaps and notes are loaded into MongoDB from `content/` by `python -m app.cli seed`, which validates everything first (unique ids, earlier-topic prerequisites, links, difficulties, tiers). Roadmaps are replaced on every seed; your progress is kept because it is stored by question id.
+
+- **A note**: drop a `.md` file under `content/notes/` and add `{ "id", "title", "file" }` to a section in `content/content.json`, then seed. Or, as the admin, click **New note** in the app. Markdown supports ```` ```java ```` highlighting and ```` ```mermaid ```` diagrams.
+- **A roadmap**: add `content/roadmaps/<id>.json`, list it under `roadmaps` in `content/content.json` (the `title` there is the short nav label; add `"mock": true` for a Mock interview button), then seed. The format is:
 
 ```json
 { "id": "sd", "title": "System Design", "topics": [
   { "id": "basics", "title": "Basics", "prereqs": [], "note": "notes/sd/basics.md", "questions": [
-    { "id": "sd-url-shortener", "title": "Design a URL shortener", "diff": "M", "group": "Classic", "src": [],
-      "needs": [], "url": "https://…", "video": "https://…", "article": "https://…" }
+    { "id": "sd-url-shortener", "title": "Design a URL shortener", "diff": "M", "tier": "core", "group": "Classic",
+      "patterns": ["Caching"], "needs": [], "url": "https://…", "video": "https://…", "article": "https://…" }
   ]}
 ]}
 ```
 
-`id` is the progress key and must be unique across all roadmaps. `diff` is `E`/`M`/`H`. `needs` and `prereqs` must name **earlier** topics. `group`, `alt`, `video`, `article` and `premium` are optional. `alt` holds extra practice links shown as chips next to the main one, for example `{ "GFG": "https://…", "LC Premium": "https://…" }`.
+`id` is the progress key and must be unique across all roadmaps. `diff` is `E`/`M`/`H`. `needs` lists earlier topics a question depends on; they show as lock chips until those topics are done. `needs` and `prereqs` must name **earlier** topics. `tier` (`basic`/`core`/`pro`), `patterns`, `alt`, `video`, `article` and `premium` are optional. `alt` holds extra practice links shown as chips next to the main one, for example `{ "GFG": "https://…", "LC Premium": "https://…" }`.
 
-After editing, run `node check.js`. It validates ids, difficulties, sources, prerequisite order and that every file exists.
+- **Quiz questions**: one file per Learning Series topic, `frontend/src/quiz/<topic id>.json`, shaped `{ "easy": [5 questions], "medium": [5], "hard": [5] }`. A question is `{ "q", "code" (optional Java), "options" (4), "answer" (index of the right option), "why" (markdown) }`. Options are shuffled when shown, so none may say "all of the above" or point at another option. They ship with the frontend, so no seed is needed; `tests/test_quiz.py` checks every file.
+
+## Tests
+
+```sh
+cd backend && .venv/bin/pytest -q
+```
+
+They run against the `MONGODB_URI` in `.env`, in a throwaway `dsa_tracker_test_…` database that is dropped afterwards. They cover login and the 30-day cookie, rate limiting, invites (single use, expiry, revoke), admin-only note editing, progress and quiz-score validation and privacy between users. `tests/test_quiz.py` needs no database: it checks that every Learn topic has a well-formed quiz.
