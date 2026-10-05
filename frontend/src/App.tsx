@@ -14,6 +14,7 @@ import { StoreProvider, useStore, type Content } from './store';
 // markdown + sanitizer are only needed here, so these pages load on first visit
 const Notes = lazy(() => import('./pages/Notes'));
 const Quiz = lazy(() => import('./pages/Quiz'));
+const MyNotes = lazy(() => import('./pages/MyNotes'));   // the rich-text editor is big, so it loads only here
 
 function Shell() {
   const { user } = useStore();
@@ -33,6 +34,7 @@ function Shell() {
         <Route path="/quiz/:topic/:level" element={<Quiz />} />
         <Route path="/notes" element={<Notes />} />
         <Route path="/notes/:id" element={<Notes />} />
+        <Route path="/my-notes/*" element={<MyNotes />} />
         <Route path="/admin" element={user.is_admin ? <Admin /> : <Navigate to="/" replace />} />
         <Route path="/signup" element={<Navigate to="/" replace />} />
         <Route path="*" element={<Today />} />

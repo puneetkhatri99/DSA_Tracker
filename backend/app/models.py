@@ -1,6 +1,7 @@
+import json
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator, model_validator
 
 Url = Annotated[str, StringConstraints(pattern=r'^https?://\S+$')]
 LcUrl = Annotated[str, StringConstraints(pattern=r'^https?://(www\.)?leetcode\.(com|cn)/\S*$', max_length=500)]
@@ -97,3 +98,47 @@ class NoteIn(Strict):
     title: Name
     section: Name
     body: Annotated[str, StringConstraints(max_length=500_000)]
+
+
+# ---------- my notes: personal folders and files ----------
+Id = Annotated[str, StringConstraints(pattern=r'^[0-9a-f]{24}$')]
+Doc = dict   # the editor's (Tiptap/ProseMirror) JSON document
+MAX_DOC = 2_000_000   # characters of JSON; a long note with big pasted answers is well under this
+
+
+def small_doc(doc: Doc | None) -> Doc | None:
+    if doc is not None and len(json.dumps(doc, separators=(',', ':'))) > MAX_DOC:
+        raise ValueError('This note is too large to save')
+    return doc
+
+
+class FolderIn(Strict):
+    name: Name
+    parent_id: Id | None = None
+
+
+class FolderPatch(Strict):   # a field left out stays as is; parent_id: null moves to the top level
+    name: Name | None = None
+    parent_id: Id | None = None
+
+
+class FileIn(Strict):
+    name: Name
+    folder_id: Id | None = None
+    doc: Doc | None = None
+    text: Annotated[str, StringConstraints(max_length=500_000)] = ''
+    check_doc = field_validator('doc')(small_doc)
+
+
+class FilePatch(Strict):
+    name: Name | None = None
+    folder_id: Id | None = None
+    doc: Doc | None = None
+    text: Annotated[str, StringConstraints(max_length=500_000)] | None = None
+    check_doc = field_validator('doc')(small_doc)
+
+
+class ShareIn(Strict):
+    kind: Literal['folder', 'file']
+    item_id: Id
+    email: Annotated[str, StringConstraints(strip_whitespace=True, to_lower=True, min_length=3, max_length=254)]

@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
 
-from . import api, auth
+from . import api, auth, my_notes
 from .config import DIST
 from .db import close, connect
 
@@ -19,6 +19,7 @@ app = FastAPI(title='DSA Tracker', lifespan=lifespan, docs_url='/api/docs', open
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.include_router(auth.router)
 app.include_router(api.router)
+app.include_router(my_notes.router)
 
 
 @app.middleware('http')

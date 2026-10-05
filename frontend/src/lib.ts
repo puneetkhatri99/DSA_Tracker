@@ -20,6 +20,25 @@ export interface Meta { target?: string; reviews?: Record<string, number>; quiz?
 export interface QuizQuestion { q: string; code?: string; options: string[]; answer: number; why: string }
 export type QuizBank = Record<Level, QuizQuestion[]>;
 export interface User { id: string; name: string; email: string; is_admin: boolean }
+
+// My notes: personal folders and rich-text files (doc is the editor's JSON), shared view-only by email.
+export type NbKind = 'folder' | 'file';
+export interface Person { name: string; email: string }
+export interface NbFolder { id: string; name: string; parent_id: string | null; updated_at: string }
+export interface NbFileMeta { id: string; name: string; folder_id: string | null; preview: string; updated_at: string }
+export interface NbFile extends NbFileMeta { doc: Record<string, unknown> | null; can_edit: boolean; owner: Person }
+export interface NbTree { folders: NbFolder[]; files: NbFileMeta[] }
+export interface NbShared extends NbTree { root: string; owner: Person; can_edit: boolean }
+export interface NbSharedItem { share_id: string; kind: NbKind; id: string; name: string; updated_at: string; owner: Person }
+export interface NbShare { id: string; user: Person; created_at: string }
+export interface NbItem { kind: NbKind; id: string; name: string }
+export const ago = (iso: string) => {
+  const s = (Date.now() - +new Date(iso)) / 1000;
+  const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
+  for (const [unit, n] of [['year', 31536e3], ['month', 2592e3], ['week', 604800], ['day', 86400], ['hour', 3600], ['minute', 60]] as const)
+    if (s >= n) return rtf.format(-Math.floor(s / n), unit);
+  return 'just now';
+};
 export interface Filters { tier: string; pattern: string; diff: string; status: string; q: string }
 export type Progress = Record<string, QState>;
 

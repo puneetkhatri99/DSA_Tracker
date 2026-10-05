@@ -54,9 +54,9 @@ export function Header() {
   const [, view, id] = pathname.split('/');
   const active = (href: string) => {
     if (view === 'mock') return href === `/roadmap/${id}`;
-    return href === (['roadmap', 'notes', 'quiz', 'admin'].includes(view) ? `/${view}${view === 'roadmap' ? `/${id}` : ''}` : '/today');
+    return href === (['roadmap', 'notes', 'my-notes', 'quiz', 'admin'].includes(view) ? `/${view}${view === 'roadmap' ? `/${id}` : ''}` : '/today');
   };
-  const nav = [['/today', 'Today'], ...roadmaps.map(r => [`/roadmap/${r.id}`, r.nav || r.title]), ['/quiz', 'Quiz'], ['/notes', 'Notes']];
+  const nav = [['/today', 'Today'], ...roadmaps.map(r => [`/roadmap/${r.id}`, r.nav || r.title]), ['/quiz', 'Quiz'], ['/notes', 'Notes'], ['/my-notes', 'My Notes']];
   return (
     <header>
       <Link className="brand" to="/"><TreeStructureIcon />DSA Tracker</Link>
