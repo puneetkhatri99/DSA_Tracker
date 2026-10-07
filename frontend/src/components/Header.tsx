@@ -1,4 +1,4 @@
-import { BellIcon, SignOutIcon, StopIcon, TimerIcon, TreeStructureIcon, UserCircleIcon, UserPlusIcon } from '@phosphor-icons/react';
+import { BellIcon, QuestionIcon, SignOutIcon, StopIcon, TimerIcon, TreeStructureIcon, UserCircleIcon, UserPlusIcon } from '@phosphor-icons/react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { clock, isDue } from '../lib';
@@ -24,7 +24,7 @@ export function useDueCount() {
   return Object.entries(progress).filter(([id, s]) => byId[id] && isDue(s)).length;
 }
 
-// Who is logged in, the admin's invite page, and log out.
+// Who is logged in, help, the admin's invite page, and log out.
 function AccountMenu() {
   const { user, logout } = useStore();
   const menu = useRef<HTMLDetailsElement>(null);
@@ -39,6 +39,7 @@ function AccountMenu() {
       <summary className="icon" title={user.name} aria-label="Account"><UserCircleIcon /></summary>
       <div className="menu">
         <p><b>{user.name}</b><span>{user.email}</span></p>
+        <Link to="/help" onClick={close}><QuestionIcon />Help</Link>
         {user.is_admin && <Link to="/admin" onClick={close}><UserPlusIcon />Invite people</Link>}
         <button onClick={() => { close(); logout(); }}><SignOutIcon />Log out</button>
       </div>
@@ -54,7 +55,7 @@ export function Header() {
   const [, view, id] = pathname.split('/');
   const active = (href: string) => {
     if (view === 'mock') return href === `/roadmap/${id}`;
-    return href === (['roadmap', 'notes', 'my-notes', 'quiz', 'admin'].includes(view) ? `/${view}${view === 'roadmap' ? `/${id}` : ''}` : '/today');
+    return href === (['roadmap', 'notes', 'my-notes', 'quiz', 'admin', 'help'].includes(view) ? `/${view}${view === 'roadmap' ? `/${id}` : ''}` : '/today');
   };
   const nav = [['/today', 'Today'], ...roadmaps.map(r => [`/roadmap/${r.id}`, r.nav || r.title]), ['/quiz', 'Quiz'], ['/notes', 'Notes'], ['/my-notes', 'My Notes']];
   return (
