@@ -105,10 +105,10 @@ export default function RoadmapPage() {
           const rows = list.map(q => <QuestionRow key={q.id} q={q} stats={stats} />);
           if (!g || new Set(t.questions.map(q => q.group)).size < 2) return <Fragment key={gi}>{g && <h4>{g}</h4>}{rows}</Fragment>;
           // Sub-sections fold too. They stay open while a filter is on, so matches are never hidden.
-          const key = `${t.id}/${g}`, all = t.questions.filter(q => q.group === g);
+          const key = `${t.id}/${g}`, all = t.questions.filter(q => q.group === g), done = all.filter(q => st(q.id).done).length;
           return (
-            <details key={gi} className="group" open={openTopics.has(key) || filtering(filters)} onToggle={e => setOpenTopic(key, e.currentTarget.open)}>
-              <summary><CaretRightIcon className="ph caret" /><span>{g}</span><span className="count">{all.filter(q => st(q.id).done).length}/{all.length}</span></summary>
+            <details key={gi} className={`group ${done === all.length ? 'complete' : ''}`} open={openTopics.has(key) || filtering(filters)} onToggle={e => setOpenTopic(key, e.currentTarget.open)}>
+              <summary><CaretRightIcon className="ph caret" /><span>{g}</span>{done === all.length && <span className="group-done"><CheckIcon weight="bold" />Completed</span>}<span className="count">{done}/{all.length}</span></summary>
               {rows}
             </details>
           );
