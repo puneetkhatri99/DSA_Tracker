@@ -1,5 +1,5 @@
 import { FloppyDiskIcon, PencilSimpleIcon, PlusIcon, XIcon } from '@phosphor-icons/react';
-import { Fragment, useEffect, useState } from 'react';
+import { type MouseEvent, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { api, cacheNote, getNote } from '../api';
 import { Loader } from '../components/Loader';
@@ -26,6 +26,12 @@ export default function Notes() {
     window.scrollTo(0, 0);
   }, [ref?.id]);
 
+  // Links between notes ([x](/notes/id)) are plain <a>s in the markdown; route them in-app instead of reloading.
+  const follow = (e: MouseEvent) => {
+    const href = (e.target as HTMLElement).closest('a')?.getAttribute('href');
+    if (href?.startsWith('/') && !e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0) { e.preventDefault(); navigate(href); }
+  };
+
   const save = async () => {
     if (!draft) return;
     setSaving(true);
@@ -48,12 +54,12 @@ export default function Notes() {
   return (
     <div className="notes">
       <aside>
-        {sections.map(s => <Fragment key={s.section}><h3>{s.section}</h3>
-          {s.items.map(n => <Link key={n.id} to={`/notes/${n.id}`} className={n.id === ref?.id && !(draft && !draft.id) ? 'active' : ''}>{n.title}</Link>)}</Fragment>)}
+        {sections.map(s => <details key={s.section} open={s.section === ref?.section}><summary>{s.section}</summary>
+          {s.items.map(n => <Link key={n.id} to={`/notes/${n.id}`} className={n.id === ref?.id && !(draft && !draft.id) ? 'active' : ''}>{n.title}</Link>)}</details>)}
         {user.is_admin && <button className="text-btn new-note" onClick={() => setDraft({ id: '', title: '', section: ref?.section || '', body: '' })}>
           <PlusIcon />New note</button>}
       </aside>
-      <div className="note-main">
+      <div className="note-main" onClick={draft ? undefined : follow}>
         {draft ? <div className="editor">
           <div className="editor-bar">
             <input value={draft.title} placeholder="Title" aria-label="Title" onChange={e => setDraft({ ...draft, title: e.target.value })} />
