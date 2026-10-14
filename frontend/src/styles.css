@@ -139,6 +139,12 @@ button.primary kbd { border: 0; background: color-mix(in srgb, var(--on-accent) 
 .group:not(:first-of-type) > summary { border-top: 1px solid var(--line); }
 .group > summary .count { margin-left: auto; text-transform: none; letter-spacing: 0; font-weight: 400; }
 .group > .q { padding-left: 28px; }
+/* "Completed" pill on the right of a finished sub-section; it takes over pushing the count right. */
+.group-done { display: inline-flex; align-items: center; gap: 5px; margin-left: auto; padding: 3px 10px 3px 8px; flex: none;
+  border: 1px solid var(--accent); border-radius: 999px; background: var(--accent-soft); color: var(--accent);
+  font-size: 11px; font-weight: 600; letter-spacing: .04em; }
+.group-done ~ .count { margin-left: 0; }
+.group.complete > summary { color: var(--text); }
 .num { display: grid; place-items: center; width: 26px; height: 26px; flex: none; border-radius: 8px; background: var(--raised);
   font: 500 12px var(--mono); color: var(--muted); }
 .complete .num { background: var(--accent); color: var(--on-accent); }
@@ -352,8 +358,13 @@ button.primary kbd { border: 0; background: color-mix(in srgb, var(--on-accent) 
 .notes { display: grid; grid-template-columns: 236px minmax(0, 1fr); gap: 32px; align-items: start; }
 .notes aside { position: sticky; top: 76px; max-height: calc(100dvh - 96px); overflow-y: auto; font-size: 14px;
   scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
-.notes aside h3 { margin: 18px 0 6px; padding: 0 10px; font-size: 11.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-.notes aside h3:first-child { margin-top: 0; }
+.notes aside summary { margin: 18px 0 6px; padding: 0 10px; font-size: 11.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--muted); cursor: pointer; list-style: none; }
+.notes aside summary::-webkit-details-marker { display: none; }
+.notes aside summary::before { content: '▸'; display: inline-block; width: 1.1em; transition: transform .15s var(--ease); }
+.notes aside details[open] > summary::before { transform: rotate(90deg); }
+.notes aside summary:hover { color: var(--text); }
+.notes aside details:first-child > summary { margin-top: 0; }
 .notes aside a { display: block; padding: 5px 10px; border-radius: 8px; color: var(--muted); }
 .notes aside a:hover { color: var(--text); background: var(--raised); text-decoration: none; }
 .notes aside a.active { color: var(--text); background: var(--raised); font-weight: 600; box-shadow: inset 2px 0 0 var(--accent); }
@@ -371,6 +382,14 @@ button.primary kbd { border: 0; background: color-mix(in srgb, var(--on-accent) 
 .md th, .md td { border: 1px solid var(--line); padding: 8px 12px; text-align: left; vertical-align: top; }
 .md th { background: var(--raised); font-weight: 600; }
 .md blockquote { margin: 16px 0; padding: 10px 16px; border-left: 3px solid var(--accent); background: var(--raised); border-radius: 0 8px 8px 0; }
+
+/* ---------- help ---------- */
+.help { margin-top: 20px; }
+.help h2 { scroll-margin-top: 72px; }   /* clear the sticky header when jumping from the contents */
+.help-toc { margin-top: 20px; padding: 12px 16px; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; }
+.help-toc ol { margin: 0; padding-left: 20px; columns: 2 200px; column-gap: 32px; }
+.help th { white-space: nowrap; }
+.help th .ph, .help td .ph, .help li .ph, .help p .ph { color: var(--muted); }
 
 /* ---------- note editor (admin) ---------- */
 .note-main { min-width: 0; }

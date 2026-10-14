@@ -8,9 +8,36 @@
       { "id": "java-io", "title": "Input / Output", "file": "notes/java/01-input-output.md" },
       { "id": "java-basics", "title": "Basics for DSA", "file": "notes/java/02-basics-for-dsa.md" },
       { "id": "java-strings", "title": "Strings & StringBuilder", "file": "notes/java/03-strings.md" },
-      { "id": "java-collections", "title": "Collections Framework", "file": "notes/java/04-collections-framework.md" },
       { "id": "java-comparators", "title": "Comparators & Lambdas", "file": "notes/java/05-comparators-lambdas.md" },
       { "id": "java-math-bits", "title": "Math & Bit Tricks", "file": "notes/java/06-math-bits.md" }
+    ]},
+    { "section": "Java Collections", "items": [
+      { "id": "java-collections", "title": "1. Overview & Hierarchy", "file": "notes/collections/01-overview.md" },
+      { "id": "coll-arraylist", "title": "2. ArrayList", "file": "notes/collections/02-arraylist.md" },
+      { "id": "coll-linkedlist", "title": "3. LinkedList", "file": "notes/collections/03-linkedlist.md" },
+      { "id": "coll-arraydeque", "title": "4. ArrayDeque: Stack & Queue", "file": "notes/collections/04-arraydeque.md" },
+      { "id": "coll-utilities", "title": "5. Utilities, List.of & Conversions", "file": "notes/collections/05-utilities.md" },
+      { "id": "coll-hashmap", "title": "6. HashMap", "file": "notes/collections/06-hashmap.md" },
+      { "id": "coll-hashset", "title": "7. HashSet & LinkedHashSet", "file": "notes/collections/07-hashset.md" },
+      { "id": "coll-map-idioms", "title": "8. Map Idioms", "file": "notes/collections/08-map-idioms.md" },
+      { "id": "coll-linkedhashmap", "title": "9. LinkedHashMap & LRU", "file": "notes/collections/09-linkedhashmap.md" },
+      { "id": "coll-iteration-traps", "title": "10. Iterators & Traps", "file": "notes/collections/10-iteration-traps.md" },
+      { "id": "coll-custom-keys", "title": "11. equals, hashCode & Custom Keys", "file": "notes/collections/11-custom-keys.md" },
+      { "id": "coll-priorityqueue", "title": "12. PriorityQueue (Heap)", "file": "notes/collections/12-priorityqueue.md" },
+      { "id": "coll-treemap", "title": "13. TreeMap & TreeSet", "file": "notes/collections/13-treemap.md" },
+      { "id": "coll-internals-arrays", "title": "14. Internals I: Arrays, Deques & Heaps", "file": "notes/collections/14-internals-arrays.md" },
+      { "id": "coll-internals-maps", "title": "15. Internals II: HashMap & TreeMap", "file": "notes/collections/15-internals-maps.md" },
+      { "id": "coll-hard-cases", "title": "16. Hard Use Cases", "file": "notes/collections/16-hard-cases.md" }
+    ]},
+    { "section": "Time & Space Complexity", "items": [
+      { "id": "cx-big-o", "title": "1. What Big-O Really Means", "file": "notes/complexity/01-big-o.md" },
+      { "id": "cx-loops", "title": "2. Counting Loops", "file": "notes/complexity/02-loops.md" },
+      { "id": "cx-space", "title": "3. Space Complexity", "file": "notes/complexity/03-space.md" },
+      { "id": "cx-recursion", "title": "4. Recursion & Recurrences", "file": "notes/complexity/04-recursion.md" },
+      { "id": "cx-amortized", "title": "5. Amortized Analysis", "file": "notes/complexity/05-amortized.md" },
+      { "id": "cx-cheatsheet", "title": "6. Cheat Sheet: Algorithms & Collections", "file": "notes/complexity/06-cheatsheet.md" },
+      { "id": "cx-java-costs", "title": "7. Hidden Costs in Java", "file": "notes/complexity/07-java-costs.md" },
+      { "id": "cx-hard-cases", "title": "8. Hard & Unusual Cases", "file": "notes/complexity/08-hard-cases.md" }
     ]},
     { "section": "Java Core / OOP", "items": [
       { "id": "core-oop", "title": "OOP in Java", "file": "notes/java-core/01-oop.md" },

@@ -161,6 +161,8 @@ long power(long base, long exp, long mod) {
 
 ## Complexity
 
+Full explanations, recurrences and tricky cases: [Time & Space Complexity](/notes/cx-big-o).
+
 ### Big-O reference
 
 | Complexity | Name | Typical source | n = 1e5 roughly means |

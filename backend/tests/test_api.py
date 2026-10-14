@@ -81,7 +81,7 @@ def test_content(c):
     assert (learn['id'], learn['nav'], practice['mock']) == ('learn', 'Learn', True)
     assert sum(len(t['questions']) for t in learn['topics']) == 420   # A2Z (415) plus five warm-ups
     assert learn['topics'][0]['note'] == 'learn-basics'
-    assert len(body['notes']) == 33 and body['notes'][0]['id'] == 'java-io'
+    assert len(body['notes']) == 56 and body['notes'][0]['id'] == 'java-io'
     assert '## When to use' in c.get('/api/notes/learn-arrays').json()['body']
 
 

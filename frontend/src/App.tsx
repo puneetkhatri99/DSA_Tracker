@@ -6,6 +6,7 @@ import { Loader } from './components/Loader';
 import type { Progress, User } from './lib';
 import Admin from './pages/Admin';
 import { Login, Signup } from './pages/Auth';
+import Help from './pages/Help';
 import Mock from './pages/Mock';
 import RoadmapPage, { Review } from './pages/Roadmap';
 import Today from './pages/Today';
@@ -35,6 +36,7 @@ function Shell() {
         <Route path="/notes" element={<Notes />} />
         <Route path="/notes/:id" element={<Notes />} />
         <Route path="/my-notes/*" element={<MyNotes />} />
+        <Route path="/help" element={<Help />} />
         <Route path="/admin" element={user.is_admin ? <Admin /> : <Navigate to="/" replace />} />
         <Route path="/signup" element={<Navigate to="/" replace />} />
         <Route path="*" element={<Today />} />
